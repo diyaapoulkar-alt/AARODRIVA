@@ -1,5 +1,4 @@
 from fastapi import APIRouter
-from backend.services.flood_analysis import flood_analysis_service
 from backend.services.routing import rescue_route_engine
 
 router = APIRouter(prefix="/api/metrics", tags=["Command Dashboard Metrics"])
