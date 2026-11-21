@@ -37,6 +37,8 @@ endpoints = [
     ("GET", "/api/reports/sitrep", None),
     ("GET", "/api/reports/sitrep/metrics", None),
     ("GET", "/api/reports/sitrep/download", None),
+    ("POST", "/api/predict/location", {"latitude": 26.182, "longitude": 91.744, "place_name": "Kharghuli Ward 4"}),
+    ("GET", "/api/predict/location?lat=26.168&lon=91.725&name=Pandu+Ghat", None),
 ]
 
 all_passed = True
@@ -60,7 +62,7 @@ for method, path, payload in endpoints:
 
 print("=" * 70)
 if all_passed:
-    print("ALL 27 ENDPOINTS ACROSS ALL 5 FEATURES VERIFIED OPERATIONAL!")
+    print("ALL 29 ENDPOINTS ACROSS ALL 5 FEATURES VERIFIED OPERATIONAL!")
 else:
     print("WARNING: Some endpoints failed the audit.")
 print("=" * 70)

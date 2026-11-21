@@ -1,6 +1,6 @@
 {
   "type": "FeatureCollection",
-  "name": "Bhuvan_Bhoonidhi_Inundation_Assam_Golaghat",
+  "name": "Bhuvan_Bhoonidhi_Inundation_Assam_Unified",
   "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
   "features": [
     {
@@ -50,6 +50,54 @@
             [93.110, 26.595],
             [93.075, 26.590],
             [93.060, 26.615]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "FLOOD_ZONE_GHY_01",
+        "name": "Brahmaputra North Bank Inundation Sector A",
+        "source": "ISRO Bhoonidhi / RISAT-1A SAR",
+        "depth_category": "Critical (2.8m)",
+        "inundation_area_sqkm": 62.4,
+        "satellite_sensor": "RISAT-1A C-band SAR",
+        "detected_at": "2026-11-21T02:00:00Z"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [91.710, 26.185],
+            [91.745, 26.198],
+            [91.770, 26.178],
+            [91.735, 26.162],
+            [91.710, 26.185]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "FLOOD_ZONE_GHY_02",
+        "name": "Bharalu River Overflow Lowland Sector B",
+        "source": "ISRO Bhuvan Flood Mapping System",
+        "depth_category": "High (1.6m)",
+        "inundation_area_sqkm": 38.6,
+        "satellite_sensor": "Sentinel-1A Radar C-SAR",
+        "detected_at": "2026-11-21T04:30:00Z"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [91.685, 26.140],
+            [91.715, 26.155],
+            [91.728, 26.132],
+            [91.698, 26.122],
+            [91.685, 26.140]
           ]
         ]
       }

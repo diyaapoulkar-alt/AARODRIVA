@@ -116,6 +116,40 @@ class TestSettlementAnalysis(unittest.TestCase):
         self.assertEqual(r8.status_code, 200)
         print("[PASS] All settlement REST API endpoints verified")
 
+    def test_location_prediction_api(self):
+        """Verify dynamic AI place and coordinate prediction endpoint."""
+        # 1. Prediction for Kharghuli (Marooned Sector)
+        r1 = self.client.post("/api/predict/location", json={
+            "latitude": 26.182,
+            "longitude": 91.744,
+            "place_name": "Kharghuli Ward 4"
+        })
+        self.assertEqual(r1.status_code, 200)
+        d1 = r1.json()
+        self.assertTrue(d1["prediction"]["is_marooned"])
+        self.assertEqual(d1["prediction"]["access_status"], "Access severed")
+        self.assertIsNotNone(d1["nearest_rescue_camp"])
+        self.assertIn("recommended_rescue_route", d1)
+        self.assertGreater(d1["recommended_rescue_route"]["total_distance_km"], 0)
+
+        # 2. Prediction for Dispur Elevated Ridge (Safe Sector)
+        r2 = self.client.post("/api/predict/location", json={
+            "latitude": 26.145,
+            "longitude": 91.770,
+            "place_name": "Dispur Elevated Ridge"
+        })
+        self.assertEqual(r2.status_code, 200)
+        d2 = r2.json()
+        self.assertFalse(d2["prediction"]["is_marooned"])
+
+        # 3. GET /api/predict/location for zoomed point click
+        r3 = self.client.get("/api/predict/location?lat=26.168&lon=91.725&name=Pandu+Ghat")
+        self.assertEqual(r3.status_code, 200)
+        d3 = r3.json()
+        self.assertTrue(d3["prediction"]["is_marooned"])
+
+        print("[PASS] Successfully verified dynamic location prediction for zoomed map places!")
+
 
 if __name__ == "__main__":
     unittest.main()

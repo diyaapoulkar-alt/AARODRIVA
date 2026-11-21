@@ -108,3 +108,48 @@ def simulate_flood_impact(request: SimulationRequest):
             "newly_at_risk": newly_at_risk
         }
     }
+
+
+from pydantic import BaseModel, Field
+
+class LocationPredictionRequest(BaseModel):
+    latitude: float = Field(..., description="WGS84 Latitude")
+    longitude: float = Field(..., description="WGS84 Longitude")
+    place_name: Optional[str] = Field(None, description="Optional name of the city, ward, or settlement")
+    threat_buffer_meters: Optional[float] = Field(150.0, description="Buffer sensitivity in meters")
+
+
+@router.post("/predict/location")
+@router.post("/settlements/predict")
+def predict_location_threat_post(req: LocationPredictionRequest):
+    """
+    Predicts flood submergence risk, marooned isolation status, and calculates
+    an optimal Dijkstra rescue corridor for any place or coordinate.
+    """
+    return settlement_analysis_service.predict_location(
+        lat=req.latitude,
+        lon=req.longitude,
+        place_name=req.place_name,
+        threat_buffer_meters=req.threat_buffer_meters or 150.0
+    )
+
+
+@router.get("/predict/location")
+@router.get("/settlements/predict")
+def predict_location_threat_get(
+    lat: float = Query(..., description="Latitude"),
+    lon: float = Query(..., description="Longitude"),
+    name: Optional[str] = Query(None, description="Place name"),
+    threat_buffer_meters: float = Query(150.0, ge=0.0, le=5000.0)
+):
+    """
+    GET endpoint for dynamic place threat and marooned prediction.
+    Enables instant prediction as users zoom into areas or click on the map.
+    """
+    return settlement_analysis_service.predict_location(
+        lat=lat,
+        lon=lon,
+        place_name=name,
+        threat_buffer_meters=threat_buffer_meters
+    )
+

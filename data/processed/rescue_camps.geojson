@@ -1,6 +1,6 @@
 {
   "type": "FeatureCollection",
-  "name": "Rescue_Camps_Golaghat",
+  "name": "Rescue_Camps_Assam_Unified",
   "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
   "features": [
     {
@@ -35,6 +35,40 @@
       "geometry": {
         "type": "Point",
         "coordinates": [93.190, 26.550]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "CAMP_NDRF_01",
+        "name": "NDRF Base & Relief Camp #1 Dispur",
+        "commanding_agency": "NDRF 1st Battalion Tactical Command",
+        "capacity_people": 500,
+        "available_boats": 6,
+        "medical_staff": 12,
+        "radio_frequency_vhf": "156.800 MHz",
+        "operational_status": "Active & Staged"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [91.785, 26.138]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "CAMP_STADIUM_02",
+        "name": "District Stadium Shelter Guwahati",
+        "commanding_agency": "SDRF Regional Response Unit",
+        "capacity_people": 800,
+        "available_boats": 3,
+        "medical_staff": 9,
+        "radio_frequency_vhf": "148.250 MHz",
+        "operational_status": "Active & Staged"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [91.755, 26.125]
       }
     }
   ]

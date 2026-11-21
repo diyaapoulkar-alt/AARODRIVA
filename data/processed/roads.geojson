@@ -1,6 +1,6 @@
 {
   "type": "FeatureCollection",
-  "name": "Road_Network_Golaghat_Assam",
+  "name": "Road_Network_Assam_Unified",
   "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
   "features": [
     {
@@ -191,6 +191,280 @@
           [93.160, 26.685],
           [93.140, 26.680],
           [93.120, 26.670]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "G_ROAD_01",
+        "name": "Dispur Elevated Arterial",
+        "from_node": "CAMP_NDRF_01",
+        "to_node": "INT_DISPUR_RIDGE",
+        "length_km": 2.1,
+        "is_flooded": false,
+        "water_depth_cm": 0,
+        "road_type": "Paved Elevated Corridor"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [91.785, 26.138],
+          [91.778, 26.142],
+          [91.770, 26.145]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "G_ROAD_02",
+        "name": "GS Road Safe Corridor",
+        "from_node": "INT_DISPUR_RIDGE",
+        "to_node": "INT_GS_ROAD",
+        "length_km": 1.8,
+        "is_flooded": false,
+        "water_depth_cm": 0,
+        "road_type": "Highway Arterial"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [91.770, 26.145],
+          [91.765, 26.150],
+          [91.760, 26.155]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "G_ROAD_03",
+        "name": "Zoo Road High-Elevation Ridge",
+        "from_node": "INT_GS_ROAD",
+        "to_node": "INT_ZOO_ROAD",
+        "length_km": 3.8,
+        "is_flooded": false,
+        "water_depth_cm": 0,
+        "road_type": "Elevated Ridge Corridor"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [91.760, 26.155],
+          [91.755, 26.162],
+          [91.752, 26.168]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "G_ROAD_04",
+        "name": "Kharghuli Hill Approach",
+        "from_node": "INT_ZOO_ROAD",
+        "to_node": "VIL_KHARGHULI",
+        "length_km": 3.2,
+        "is_flooded": false,
+        "water_depth_cm": 0,
+        "road_type": "Hillside Paved Link"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [91.752, 26.168],
+          [91.748, 26.175],
+          [91.744, 26.182]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "G_ROAD_BLOCKED_01",
+        "name": "NH-27 River Bridge Approach",
+        "from_node": "INT_GS_ROAD",
+        "to_node": "INT_NH27_BRIDGE_APPROACH",
+        "length_km": 1.2,
+        "is_flooded": true,
+        "water_depth_cm": 140,
+        "road_type": "Submerged Highway Approach",
+        "blockage_note": "CRITICAL: Causeway under 1.4m turbulent overflow"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [91.760, 26.155],
+          [91.735, 26.158],
+          [91.722, 26.158]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "G_ROAD_BLOCKED_02",
+        "name": "NH-27 Bridge Span (Submerged)",
+        "from_node": "INT_NH27_BRIDGE_APPROACH",
+        "to_node": "INT_NH27_BRIDGE_SPAN",
+        "length_km": 1.0,
+        "is_flooded": true,
+        "water_depth_cm": 165,
+        "road_type": "Submerged River Bridge",
+        "blockage_note": "CRITICAL: Submerged river span"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [91.722, 26.158],
+          [91.726, 26.164],
+          [91.730, 26.169]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "G_ROAD_05",
+        "name": "North Embankment Feeder",
+        "from_node": "INT_NH27_BRIDGE_SPAN",
+        "to_node": "VIL_KHARGHULI",
+        "length_km": 1.5,
+        "is_flooded": false,
+        "water_depth_cm": 0,
+        "road_type": "Dyke Feeder Track"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [91.730, 26.169],
+          [91.738, 26.176],
+          [91.744, 26.182]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "G_ROAD_BLOCKED_03",
+        "name": "Sector 4 Embankment Road",
+        "from_node": "INT_DISPUR_RIDGE",
+        "to_node": "INT_BHARALU_CROSSING",
+        "length_km": 3.2,
+        "is_flooded": true,
+        "water_depth_cm": 95,
+        "road_type": "Submerged Embankment Road",
+        "blockage_note": "Breached embankment segment"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [91.770, 26.145],
+          [91.730, 26.148],
+          [91.712, 26.148]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "G_ROAD_06",
+        "name": "Majuli Cluster Access",
+        "from_node": "INT_BHARALU_CROSSING",
+        "to_node": "VIL_MAJULI_CLUSTER",
+        "length_km": 1.1,
+        "is_flooded": false,
+        "water_depth_cm": 0,
+        "road_type": "Local Access Track"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [91.712, 26.148],
+          [91.708, 26.144]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "G_ROAD_07",
+        "name": "Stadium Relay Link",
+        "from_node": "CAMP_STADIUM_02",
+        "to_node": "INT_DISPUR_RIDGE",
+        "length_km": 2.4,
+        "is_flooded": false,
+        "water_depth_cm": 0,
+        "road_type": "Urban Relay Arterial"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [91.755, 26.125],
+          [91.765, 26.135],
+          [91.770, 26.145]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "G_ROAD_08",
+        "name": "Saraighat High Viaduct",
+        "from_node": "INT_ZOO_ROAD",
+        "to_node": "INT_AMINGAON_JUNCTION",
+        "length_km": 3.4,
+        "is_flooded": false,
+        "water_depth_cm": 0,
+        "road_type": "High Viaduct Highway"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [91.752, 26.168],
+          [91.735, 26.175],
+          [91.720, 26.180]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "G_ROAD_09",
+        "name": "Amingaon Relief Link",
+        "from_node": "INT_AMINGAON_JUNCTION",
+        "to_node": "VIL_AMINGAON",
+        "length_km": 1.2,
+        "is_flooded": false,
+        "water_depth_cm": 0,
+        "road_type": "Paved Feeder"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [91.720, 26.180],
+          [91.718, 26.188]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "G_ROAD_10",
+        "name": "Pandu Ghat Bypass",
+        "from_node": "INT_AMINGAON_JUNCTION",
+        "to_node": "VIL_PANDU_GHAT",
+        "length_km": 1.5,
+        "is_flooded": false,
+        "water_depth_cm": 0,
+        "road_type": "Elevated Riverfront Bypass"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [91.720, 26.180],
+          [91.722, 26.172],
+          [91.725, 26.168]
         ]
       }
     }

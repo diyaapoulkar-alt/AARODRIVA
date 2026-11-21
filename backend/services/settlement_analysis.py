@@ -9,6 +9,7 @@ from backend.utils.geo_utils import (
     meters_to_degrees_approx,
     FloodIntersectionEngine,
     RoadNetworkGraph,
+    haversine_distance,
 )
 from backend.schemas.settlement import SettlementStatus, EvacuationPriority
 
@@ -141,6 +142,25 @@ class MaroonedSettlementDetector:
                 if path_info["length_km"] < min_camp_dist_km:
                     min_camp_dist_km = path_info["length_km"]
                     nearest_camp_info = camp_entry
+
+        if nearest_camp_info is None and self.camps:
+            closest_camp = None
+            closest_dist_m = float("inf")
+            for camp in self.camps:
+                ccoords = camp.get("coordinates", [0, 0])
+                d_m = haversine_distance(coords, ccoords)
+                if d_m < closest_dist_m:
+                    closest_dist_m = d_m
+                    closest_camp = camp
+            if closest_camp:
+                nearest_camp_info = {
+                    "camp_id": closest_camp["id"],
+                    "camp_name": closest_camp["name"],
+                    "distance_meters": round(closest_dist_m, 1),
+                    "distance_km": round(closest_dist_m / 1000.0, 2),
+                    "waypoints_count": 0,
+                    "is_direct_line_severed": True
+                }
 
         # 5. Determine Status and Risk Triggers
         risk_factors: List[str] = []
@@ -348,6 +368,185 @@ class MaroonedSettlementDetector:
             "blocked_roads_geojson": self.road_graph.get_flooded_edges_geojson()
         }
 
+    def predict_location(
+        self,
+        lat: float,
+        lon: float,
+        place_name: Optional[str] = None,
+        threat_buffer_meters: Optional[float] = None
+    ) -> Dict[str, Any]:
+        """
+        Dynamically analyzes and predicts disaster threat, inundation risk,
+        and marooned isolation status for any map place or coordinate.
+        """
+        from backend.services.routing import rescue_route_engine
+
+        buf = threat_buffer_meters if threat_buffer_meters is not None else self.threat_buffer_meters
+        coords = [lon, lat]
+        name = place_name or f"Sector ({lat:.4f}°N, {lon:.4f}°E)"
+
+        # Check existing settlements for exact match
+        for s in self.settlements_geojson.get("features", []):
+            sprops = s.get("properties", {})
+            sgeom = s.get("geometry", {})
+            scoords = sgeom.get("coordinates", [0, 0])
+            if (place_name and place_name.lower() in sprops.get("name", "").lower()) or (
+                abs(scoords[0] - lon) < 0.005 and abs(scoords[1] - lat) < 0.005
+            ):
+                analyzed = self.analyze_settlement(s)
+                nearest_camp_id = analyzed["nearest_camp"]["camp_id"] if analyzed.get("nearest_camp") else (
+                    self.camps[0]["id"] if self.camps else "CAMP_NDRF_01"
+                )
+                route = rescue_route_engine.calculate_route(
+                    start=nearest_camp_id,
+                    destination=[lat, lon],
+                    avoid_flooded=True
+                )
+                return {
+                    "place_name": analyzed["name"],
+                    "latitude": lat,
+                    "longitude": lon,
+                    "coordinates": [lat, lon],
+                    "matched_settlement_id": analyzed["settlement_id"],
+                    "prediction": {
+                        "access_status": analyzed["status"],
+                        "is_marooned": (analyzed["status"] == "Access severed"),
+                        "is_inundated": analyzed["is_inundated"],
+                        "evacuation_priority": analyzed["evacuation_priority"],
+                        "risk_score": analyzed["risk_score"],
+                        "flood_distance_meters": analyzed["flood_distance_meters"],
+                        "threat_buffer_meters": buf,
+                        "isolation_reason": analyzed["isolation_reason"],
+                        "risk_factors": analyzed["risk_factors"],
+                        "road_connectivity": {
+                            "total_connecting_roads": analyzed["total_connecting_roads"],
+                            "submerged_connecting_roads": analyzed["submerged_connecting_roads"],
+                            "open_connecting_roads": analyzed["open_connecting_roads"]
+                        }
+                    },
+                    "nearest_rescue_camp": analyzed.get("nearest_camp"),
+                    "all_reachable_camps": analyzed.get("all_reachable_camps", []),
+                    "recommended_rescue_route": route,
+                    "recommended_action": (
+                        "Immediate watercraft extraction required. Direct road transit impassable."
+                        if analyzed["status"] == "Access severed"
+                        else (
+                            "Relief convoys alert: monitor approaching floodwaters; prepare elevated bypass."
+                            if analyzed["status"] == "At risk"
+                            else "Normal vehicular corridor intact. Maintain standby VHF communication."
+                        )
+                    )
+                }
+
+        # 1. Spatial submergence & flood distance
+        is_inundated = self.flood_engine.is_point_inundated(coords)
+        flood_distance_m = self.flood_engine.point_distance_to_flood_meters(coords)
+        is_threatened = self.flood_engine.is_point_threatened(coords, buf)
+
+        # 2. Road graph snapping
+        nearest_node, snap_dist_m = self.road_graph.find_nearest_node(coords)
+        connecting_full = self.road_graph.get_connecting_edges_for_node(nearest_node, graph_type="full")
+        connecting_passable = self.road_graph.get_connecting_edges_for_node(nearest_node, graph_type="passable")
+        total_links = len(connecting_full)
+        open_links = len(connecting_passable)
+        submerged_links = total_links - open_links
+
+        # 3. Multi-camp reachability & nearest camp
+        reachable_camps = []
+        nearest_camp_info = None
+        min_camp_dist_km = float("inf")
+
+        for camp in self.camps:
+            camp_node = camp["graph_node"]
+            if not camp_node or not nearest_node:
+                continue
+
+            path_info = self.road_graph.shortest_path_details(
+                nearest_node, camp_node, use_passable_only=True
+            )
+            if path_info is not None:
+                camp_entry = {
+                    "camp_id": camp["id"],
+                    "camp_name": camp["name"],
+                    "distance_km": path_info["length_km"],
+                    "waypoints_count": len(path_info["path_nodes"])
+                }
+                reachable_camps.append(camp_entry)
+                if path_info["length_km"] < min_camp_dist_km:
+                    min_camp_dist_km = path_info["length_km"]
+                    nearest_camp_info = camp_entry
+
+        # 4. Status determination
+        if is_inundated or (open_links == 0 and len(reachable_camps) == 0):
+            status = "Access severed"
+            priority = "Critical" if is_inundated else "High"
+            risk_score = 95.0 if is_inundated else 85.0
+            reason = (
+                f"MAROONED: Submerged territory or severed road connectivity. "
+                f"0 open vehicular corridors to rescue camps ({submerged_links} blocked links)."
+            )
+        elif is_threatened or submerged_links > 0:
+            status = "At risk"
+            priority = "Medium"
+            risk_score = 65.0 if is_threatened else 50.0
+            reason = (
+                f"AT RISK: Proximity to active flood line ({flood_distance_m:.1f}m). "
+                f"Corridors threatened or bottlenecked ({open_links}/{total_links} open links)."
+            )
+        else:
+            status = "Accessible"
+            priority = "Low"
+            risk_score = 15.0
+            camp_name = nearest_camp_info["camp_name"] if nearest_camp_info else "Relief Staging Depot"
+            reason = f"ACCESSIBLE: High ground. Open connection to {camp_name} ({min_camp_dist_km:.1f} km)."
+
+        # 5. Calculate live RescueRoute AI bypass
+        nearest_camp_id = nearest_camp_info["camp_id"] if nearest_camp_info else (
+            self.camps[0]["id"] if self.camps else "CAMP_NDRF_01"
+        )
+        route_details = rescue_route_engine.calculate_route(
+            start=nearest_camp_id,
+            destination=[lat, lon],
+            avoid_flooded=True
+        )
+
+        return {
+            "place_name": name,
+            "latitude": lat,
+            "longitude": lon,
+            "coordinates": [lat, lon],
+            "prediction": {
+                "access_status": status,
+                "is_marooned": (status == "Access severed"),
+                "is_inundated": is_inundated,
+                "is_threatened": is_threatened,
+                "evacuation_priority": priority,
+                "risk_score": risk_score,
+                "flood_distance_meters": round(flood_distance_m, 1),
+                "threat_buffer_meters": buf,
+                "isolation_reason": reason,
+                "road_connectivity": {
+                    "total_connecting_roads": total_links,
+                    "submerged_connecting_roads": submerged_links,
+                    "open_connecting_roads": open_links,
+                    "nearest_graph_node": nearest_node,
+                    "snap_distance_meters": snap_dist_m
+                }
+            },
+            "nearest_rescue_camp": nearest_camp_info or (self.camps[0] if self.camps else None),
+            "all_reachable_camps": reachable_camps,
+            "recommended_rescue_route": route_details,
+            "recommended_action": (
+                "Immediate watercraft extraction required. Direct road transit impassable."
+                if status == "Access severed"
+                else (
+                    "Relief convoys alert: monitor approaching floodwaters; prepare elevated bypass."
+                    if status == "At risk"
+                    else "Normal vehicular corridor intact. Maintain standby VHF communication."
+                )
+            )
+        }
+
 
 class SettlementAnalysisService:
     """
@@ -425,5 +624,17 @@ class SettlementAnalysisService:
         detector = self.get_detector(threat_buffer_meters)
         return detector.detect_all()["summary"]
 
+    def predict_location(
+        self,
+        lat: float,
+        lon: float,
+        place_name: Optional[str] = None,
+        threat_buffer_meters: float = 150.0
+    ) -> Dict[str, Any]:
+        """Predicts disaster status, inundation and rescue corridor for any location or place."""
+        detector = self.get_detector(threat_buffer_meters)
+        return detector.predict_location(lat, lon, place_name, threat_buffer_meters)
+
 
 settlement_analysis_service = SettlementAnalysisService()
+

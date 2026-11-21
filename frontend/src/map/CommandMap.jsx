@@ -13,10 +13,14 @@ import {
   Mountain,
   AlertTriangle,
   Globe,
+  Loader2,
+  ShieldCheck,
+  LifeBuoy
 } from "lucide-react";
 import FloodLayer from "./FloodLayer";
 import RescueRoute from "./RescueRoute";
 import MapSearchBar from "./MapSearchBar";
+import { api } from "../services/api";
 
 // Tactical Marker for SOS / Marooned incidents
 const createMarkerIcon = (colorClass, pulse = false, label = "") =>
@@ -102,6 +106,16 @@ function MapController({ selectedIncident, targetLocation, onZoomChange }) {
   return null;
 }
 
+// Map Click Handler for dynamic point threat prediction on click
+function MapClickHandler({ onMapClick }) {
+  useMapEvents({
+    click(e) {
+      onMapClick([e.latlng.lat, e.latlng.lng]);
+    },
+  });
+  return null;
+}
+
 // 100% Accurate Google Maps & Global Tile Layers
 const TILE_PROVIDERS = {
   google_streets: {
@@ -170,14 +184,41 @@ export default function CommandMap({
     type: "active_disaster",
   });
   const [searchedCity, setSearchedCity] = useState(null);
+  const [locationPrediction, setLocationPrediction] = useState(null);
+  const [isPredicting, setIsPredicting] = useState(false);
+
+  const fetchPrediction = async (coords, name) => {
+    setIsPredicting(true);
+    try {
+      const pred = await api.predictLocation(coords[0], coords[1], name);
+      setLocationPrediction(pred);
+    } catch (err) {
+      console.error("Prediction error:", err);
+    } finally {
+      setIsPredicting(false);
+    }
+  };
 
   const handleSelectLocation = (loc) => {
     setTargetLocation(loc);
     if (loc.type !== "active_disaster") {
       setSearchedCity(loc);
+      fetchPrediction(loc.coords, loc.name);
     } else {
       setSearchedCity(null);
+      setLocationPrediction(null);
     }
+  };
+
+  const handleMapClick = (coords) => {
+    const loc = {
+      name: `Point [${coords[0].toFixed(4)}°N, ${coords[1].toFixed(4)}°E]`,
+      coords,
+      zoom: 14,
+      type: "clicked_point",
+    };
+    setSearchedCity(loc);
+    fetchPrediction(coords, loc.name);
   };
 
   const isAssamDisasterZone =
@@ -372,19 +413,90 @@ export default function CommandMap({
           onZoomChange={setCurrentZoom}
         />
 
-        {/* Searched Location Pin */}
+        <MapClickHandler onMapClick={handleMapClick} />
+
+        {/* Searched / Clicked Location Pin with AI Prediction */}
         {searchedCity && (
           <Marker position={searchedCity.coords} icon={searchPinIcon}>
             <Popup>
-              <div className="text-xs space-y-2 font-mono p-1">
-                <p className="font-bold text-cyan-400 text-sm">📍 {searchedCity.name}</p>
-                <p className="text-slate-300 text-[11px] leading-relaxed">
-                  {searchedCity.full_name || searchedCity.desc}
-                </p>
-                <div className="flex gap-2 text-[10px] text-slate-400">
-                  <span>Lat: {searchedCity.coords[0].toFixed(4)}</span>
-                  <span>Lon: {searchedCity.coords[1].toFixed(4)}</span>
+              <div className="text-xs space-y-2 font-mono p-1 max-w-[320px]">
+                <div className="flex items-center justify-between gap-1 border-b border-slate-700 pb-1.5">
+                  <p className="font-bold text-cyan-300 text-sm truncate">📍 {searchedCity.name}</p>
+                  {locationPrediction && (
+                    <span
+                      className={`px-1.5 py-0.5 text-[9px] font-bold rounded shrink-0 ${
+                        locationPrediction.prediction?.is_marooned
+                          ? "bg-rose-950 text-rose-300 border border-rose-600"
+                          : locationPrediction.prediction?.access_status === "At risk"
+                          ? "bg-amber-950 text-amber-300 border border-amber-600"
+                          : "bg-emerald-950 text-emerald-300 border border-emerald-600"
+                      }`}
+                    >
+                      {locationPrediction.prediction?.access_status?.toUpperCase() || "ACCESSIBLE"}
+                    </span>
+                  )}
                 </div>
+
+                {isPredicting ? (
+                  <div className="py-2.5 flex items-center justify-center gap-2 text-cyan-400 text-[11px] animate-pulse">
+                    <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
+                    <span>Analyzing satellite flood masks & road connectivity...</span>
+                  </div>
+                ) : locationPrediction ? (
+                  <div className="space-y-1.5 text-[11px] bg-slate-950/80 p-2.5 rounded-lg border border-slate-800">
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400">Threat Risk Score:</span>
+                      <span className={`font-black font-mono ${
+                        (locationPrediction.prediction?.risk_score || 0) > 70
+                          ? "text-rose-400"
+                          : (locationPrediction.prediction?.risk_score || 0) > 40
+                          ? "text-amber-400"
+                          : "text-emerald-400"
+                      }`}>
+                        {locationPrediction.prediction?.risk_score || 0} / 100
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400">Flood Status:</span>
+                      <span className={`font-bold ${
+                        locationPrediction.prediction?.is_inundated ? "text-rose-400" : "text-emerald-400"
+                      }`}>
+                        {locationPrediction.prediction?.is_inundated
+                          ? "🌊 INUNDATED"
+                          : `DRY GROUND (${locationPrediction.prediction?.flood_distance_meters || 0}m)`}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400">Nearest Camp:</span>
+                      <span className="text-cyan-300 font-semibold truncate max-w-[140px]">
+                        {locationPrediction.nearest_rescue_camp?.camp_name || locationPrediction.nearest_rescue_camp?.name || "NDRF Base"}
+                      </span>
+                    </div>
+
+                    {locationPrediction.recommended_rescue_route && (
+                      <div className="flex justify-between items-center border-t border-slate-800 pt-1 text-[10px]">
+                        <span className="text-emerald-400 font-bold">RescueRoute Bypass:</span>
+                        <span className="font-mono font-bold text-white">
+                          {locationPrediction.recommended_rescue_route.total_distance_km} km (ETA {locationPrediction.recommended_rescue_route.eta_minutes}m)
+                        </span>
+                      </div>
+                    )}
+
+                    <p className="text-[10px] text-slate-300 pt-1 border-t border-slate-800/80 leading-tight">
+                      {locationPrediction.prediction?.isolation_reason || locationPrediction.recommended_action}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-slate-300 text-[11px]">{searchedCity.full_name || searchedCity.desc}</p>
+                )}
+
+                <div className="flex gap-2 text-[10px] text-slate-400">
+                  <span>Lat: {searchedCity.coords[0].toFixed(4)}°N</span>
+                  <span>Lon: {searchedCity.coords[1].toFixed(4)}°E</span>
+                </div>
+
                 <div className="pt-2 border-t border-slate-700 flex flex-wrap gap-1.5">
                   <button
                     onClick={() =>
