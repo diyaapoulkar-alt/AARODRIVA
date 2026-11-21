@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Search, MapPin, X, Loader2, Globe, AlertTriangle, Crosshair, ChevronRight } from "lucide-react";
+import { Search, MapPin, X, Loader2, Globe, AlertTriangle, ChevronRight } from "lucide-react";
 
 // Instant Offline City & Disaster Hotspot Dictionary (Zero Network Latency)
 const CURATED_LOCATIONS = [
@@ -14,77 +14,84 @@ const CURATED_LOCATIONS = [
   {
     name: "Kharghuli, Guwahati",
     coords: [26.182, 91.744],
-    zoom: 15,
+    zoom: 16,
     type: "disaster_cluster",
     desc: "Brahmaputra River Bank • 12 Civilians Trapped on Rooftop",
   },
   {
     name: "Pandu Ghat, Guwahati",
     coords: [26.168, 91.725],
-    zoom: 15,
+    zoom: 16,
     type: "disaster_cluster",
     desc: "School Shelter Water Rising • Evacuation in Progress",
   },
   {
     name: "Amingaon Lowlands, Assam",
     coords: [26.188, 91.718],
-    zoom: 14,
+    zoom: 15,
     type: "disaster_cluster",
     desc: "Submerged Power Substation • Food Shortage",
   },
   {
+    name: "Dispur, Guwahati",
+    coords: [26.142, 91.790],
+    zoom: 15,
+    type: "city",
+    desc: "Assam Capital Complex & High Ground",
+  },
+  {
     name: "Majuli Island, Assam",
     coords: [26.950, 94.200],
-    zoom: 12,
+    zoom: 13,
     type: "disaster_cluster",
     desc: "Brahmaputra River Island • High Flood Risk Zone",
   },
   {
     name: "Dibrugarh, Assam",
     coords: [27.472, 94.912],
-    zoom: 13,
+    zoom: 14,
     type: "city",
     desc: "Upper Assam Brahmaputra Flood Plain",
   },
   {
     name: "Silchar, Assam",
     coords: [24.833, 92.778],
-    zoom: 13,
+    zoom: 14,
     type: "city",
     desc: "Barak Valley Flood Vulnerable Zone",
   },
   {
     name: "Kaziranga National Park, Assam",
     coords: [26.577, 93.171],
-    zoom: 12,
+    zoom: 13,
     type: "city",
     desc: "Wildlife Corridor Flood Crossing",
   },
 
   // Major Indian Metros & Flood Zones
-  { name: "Mumbai, Maharashtra", coords: [19.076, 72.877], zoom: 12, type: "city", desc: "Coastal Financial Capital" },
-  { name: "Delhi, National Capital Region", coords: [28.613, 77.209], zoom: 12, type: "city", desc: "Yamuna Flood Basin & Capital" },
-  { name: "Bengaluru, Karnataka", coords: [12.971, 77.594], zoom: 12, type: "city", desc: "Southern Tech Hub" },
-  { name: "Kolkata, West Bengal", coords: [22.572, 88.363], zoom: 12, type: "city", desc: "Hooghly River & Delta Region" },
-  { name: "Chennai, Tamil Nadu", coords: [13.082, 80.270], zoom: 12, type: "city", desc: "Bay of Bengal Coastal Belt" },
-  { name: "Hyderabad, Telangana", coords: [17.385, 78.486], zoom: 12, type: "city", desc: "Musiriver Urban Center" },
-  { name: "Patna, Bihar", coords: [25.594, 85.137], zoom: 12, type: "city", desc: "Ganga River Flood Inundation Zone" },
-  { name: "Cuttack, Odisha", coords: [20.462, 85.882], zoom: 12, type: "city", desc: "Mahanadi River Delta" },
-  { name: "Ahmedabad, Gujarat", coords: [23.022, 72.571], zoom: 12, type: "city", desc: "Sabarmati River Basin" },
-  { name: "Pune, Maharashtra", coords: [18.520, 73.856], zoom: 12, type: "city", desc: "Mula-Mutha Basin" },
-  { name: "Jaipur, Rajasthan", coords: [26.912, 75.787], zoom: 12, type: "city", desc: "Pink City, Rajasthan" },
-  { name: "Kochi, Kerala", coords: [9.931, 76.267], zoom: 12, type: "city", desc: "Backwaters & Coastal Arabian Sea" },
-  { name: "Srinagar, Jammu & Kashmir", coords: [34.083, 74.797], zoom: 12, type: "city", desc: "Jhelum River Valley" },
-  { name: "Kedarnath, Uttarakhand", coords: [30.735, 79.067], zoom: 13, type: "city", desc: "Mandakini Valley Alpine Zone" },
+  { name: "Mumbai, Maharashtra", coords: [19.076, 72.877], zoom: 13, type: "city", desc: "Coastal Financial Capital" },
+  { name: "Delhi, National Capital Region", coords: [28.613, 77.209], zoom: 13, type: "city", desc: "Yamuna Flood Basin & Capital" },
+  { name: "Bengaluru, Karnataka", coords: [12.971, 77.594], zoom: 13, type: "city", desc: "Southern Tech Hub" },
+  { name: "Kolkata, West Bengal", coords: [22.572, 88.363], zoom: 13, type: "city", desc: "Hooghly River & Delta Region" },
+  { name: "Chennai, Tamil Nadu", coords: [13.082, 80.270], zoom: 13, type: "city", desc: "Bay of Bengal Coastal Belt" },
+  { name: "Hyderabad, Telangana", coords: [17.385, 78.486], zoom: 13, type: "city", desc: "Musiriver Urban Center" },
+  { name: "Patna, Bihar", coords: [25.594, 85.137], zoom: 13, type: "city", desc: "Ganga River Flood Inundation Zone" },
+  { name: "Cuttack, Odisha", coords: [20.462, 85.882], zoom: 13, type: "city", desc: "Mahanadi River Delta" },
+  { name: "Ahmedabad, Gujarat", coords: [23.022, 72.571], zoom: 13, type: "city", desc: "Sabarmati River Basin" },
+  { name: "Pune, Maharashtra", coords: [18.520, 73.856], zoom: 13, type: "city", desc: "Mula-Mutha Basin" },
+  { name: "Jaipur, Rajasthan", coords: [26.912, 75.787], zoom: 13, type: "city", desc: "Pink City, Rajasthan" },
+  { name: "Kochi, Kerala", coords: [9.931, 76.267], zoom: 13, type: "city", desc: "Backwaters & Coastal Arabian Sea" },
+  { name: "Srinagar, Jammu & Kashmir", coords: [34.083, 74.797], zoom: 13, type: "city", desc: "Jhelum River Valley" },
+  { name: "Kedarnath, Uttarakhand", coords: [30.735, 79.067], zoom: 14, type: "city", desc: "Mandakini Valley Alpine Zone" },
 
   // Global Metros
-  { name: "Tokyo, Japan", coords: [35.676, 139.650], zoom: 12, type: "global", desc: "Greater Tokyo Bay Area" },
-  { name: "London, United Kingdom", coords: [51.507, -0.127], zoom: 12, type: "global", desc: "Thames River Basin" },
-  { name: "New York, United States", coords: [40.712, -74.006], zoom: 12, type: "global", desc: "Hudson River Estuary" },
-  { name: "Paris, France", coords: [48.856, 2.352], zoom: 12, type: "global", desc: "Seine River Basin" },
-  { name: "Singapore", coords: [1.352, 103.819], zoom: 12, type: "global", desc: "Island City-State" },
-  { name: "Dubai, United Arab Emirates", coords: [25.204, 55.270], zoom: 12, type: "global", desc: "Persian Gulf Metropolitan" },
-  { name: "Sydney, Australia", coords: [-33.868, 151.209], zoom: 12, type: "global", desc: "Sydney Harbour Basin" },
+  { name: "Tokyo, Japan", coords: [35.676, 139.650], zoom: 13, type: "global", desc: "Greater Tokyo Bay Area" },
+  { name: "London, United Kingdom", coords: [51.507, -0.127], zoom: 13, type: "global", desc: "Thames River Basin" },
+  { name: "New York, United States", coords: [40.712, -74.006], zoom: 13, type: "global", desc: "Hudson River Estuary" },
+  { name: "Paris, France", coords: [48.856, 2.352], zoom: 13, type: "global", desc: "Seine River Basin" },
+  { name: "Singapore", coords: [1.352, 103.819], zoom: 13, type: "global", desc: "Island City-State" },
+  { name: "Dubai, United Arab Emirates", coords: [25.204, 55.270], zoom: 13, type: "global", desc: "Persian Gulf Metropolitan" },
+  { name: "Sydney, Australia", coords: [-33.868, 151.209], zoom: 13, type: "global", desc: "Sydney Harbour Basin" },
 ];
 
 export default function MapSearchBar({ onSelectLocation, currentFocusName }) {
@@ -115,7 +122,7 @@ export default function MapSearchBar({ onSelectLocation, currentFocusName }) {
     }
 
     const trimmed = query.trim().toLowerCase();
-    
+
     // 1. Instant local filter
     const localMatches = CURATED_LOCATIONS.filter(
       (item) =>
@@ -136,18 +143,29 @@ export default function MapSearchBar({ onSelectLocation, currentFocusName }) {
           const res = await fetch(
             `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
               query.trim()
-            )}&limit=5&addressdetails=1`
+            )}&limit=6&addressdetails=1`
           );
           if (res.ok) {
             const data = await res.json();
-            const formatted = data.map((item) => ({
-              name: item.display_name.split(",").slice(0, 3).join(","),
-              full_name: item.display_name,
-              coords: [parseFloat(item.lat), parseFloat(item.lon)],
-              zoom: item.type === "city" || item.type === "administrative" ? 12 : 14,
-              type: "nominatim",
-              desc: item.display_name,
-            }));
+            const formatted = data.map((item) => {
+              const bbox = item.boundingbox;
+              const bounds = bbox
+                ? [
+                    [parseFloat(bbox[0]), parseFloat(bbox[2])],
+                    [parseFloat(bbox[1]), parseFloat(bbox[3])],
+                  ]
+                : null;
+
+              return {
+                name: item.display_name.split(",").slice(0, 3).join(","),
+                full_name: item.display_name,
+                coords: [parseFloat(item.lat), parseFloat(item.lon)],
+                bounds: bounds,
+                zoom: item.type === "city" || item.type === "administrative" ? 13 : 15,
+                type: "nominatim",
+                desc: item.display_name,
+              };
+            });
 
             // Merge local and remote avoiding duplicate names
             setSuggestions((prev) => {
@@ -163,7 +181,7 @@ export default function MapSearchBar({ onSelectLocation, currentFocusName }) {
         } finally {
           setIsLoading(false);
         }
-      }, 400);
+      }, 350);
     }
   }, [query]);
 
@@ -178,7 +196,6 @@ export default function MapSearchBar({ onSelectLocation, currentFocusName }) {
     if (suggestions.length > 0) {
       handleSelect(suggestions[0]);
     } else if (query.trim()) {
-      // Trigger instant Nominatim search on Enter
       setIsLoading(true);
       fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
@@ -188,11 +205,20 @@ export default function MapSearchBar({ onSelectLocation, currentFocusName }) {
         .then((res) => res.json())
         .then((data) => {
           if (data && data.length > 0) {
+            const bbox = data[0].boundingbox;
+            const bounds = bbox
+              ? [
+                  [parseFloat(bbox[0]), parseFloat(bbox[2])],
+                  [parseFloat(bbox[1]), parseFloat(bbox[3])],
+                ]
+              : null;
+
             const item = {
               name: data[0].display_name.split(",")[0],
               full_name: data[0].display_name,
               coords: [parseFloat(data[0].lat), parseFloat(data[0].lon)],
-              zoom: 12,
+              bounds: bounds,
+              zoom: 14,
               type: "nominatim",
             };
             handleSelect(item);
@@ -218,7 +244,7 @@ export default function MapSearchBar({ onSelectLocation, currentFocusName }) {
           onFocus={() => {
             if (query.trim() || suggestions.length > 0) setIsOpen(true);
           }}
-          placeholder="Search any city or country (e.g. Mumbai, Tokyo, Delhi)..."
+          placeholder="Search any city or place (e.g. Mumbai, Tokyo, Delhi, Patna)..."
           className="bg-transparent text-xs text-white placeholder-slate-400 w-full focus:outline-none font-medium"
         />
 
@@ -293,7 +319,7 @@ export default function MapSearchBar({ onSelectLocation, currentFocusName }) {
           <Globe className="w-3 h-3 text-cyan-400" /> Whole World
         </button>
 
-        {["Mumbai", "Delhi", "Bengaluru", "Tokyo"].map((city) => (
+        {["Mumbai", "Delhi", "Bengaluru", "Patna", "Kolkata", "Tokyo"].map((city) => (
           <button
             key={city}
             onClick={() => {

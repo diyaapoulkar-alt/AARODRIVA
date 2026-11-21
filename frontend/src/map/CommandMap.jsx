@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import {
   MapPin,
@@ -10,7 +10,7 @@ import {
   Map as MapIcon,
   ZoomIn,
   ZoomOut,
-  Crosshair,
+  Mountain,
   AlertTriangle,
   Globe,
 } from "lucide-react";
@@ -61,30 +61,40 @@ const searchPinIcon = L.divIcon({
   className: "custom-div-icon",
   html: `
     <div class="relative flex items-center justify-center">
-      <div class="w-9 h-9 rounded-full bg-cyan-500/25 border-2 border-cyan-400 animate-ping absolute"></div>
-      <div class="w-6 h-6 rounded-full bg-cyan-600 border-2 border-white flex items-center justify-center shadow-xl shadow-cyan-600/80 text-white font-bold text-xs">
+      <div class="w-9 h-9 rounded-full bg-cyan-500/30 border-2 border-cyan-400 animate-ping absolute"></div>
+      <div class="w-7 h-7 rounded-full bg-cyan-600 border-2 border-white flex items-center justify-center shadow-2xl shadow-cyan-500/80 text-white font-bold text-xs">
         📍
       </div>
     </div>
   `,
-  iconSize: [28, 28],
-  iconAnchor: [14, 14],
+  iconSize: [30, 30],
+  iconAnchor: [15, 15],
 });
 
-// Map Controller for smooth flyTo and programmatic control
-function MapController({ selectedIncident, targetLocation }) {
+// Map Controller for smooth flyTo and bounds fitting
+function MapController({ selectedIncident, targetLocation, onZoomChange }) {
   const map = useMap();
+
+  useMapEvents({
+    zoomend: () => {
+      if (onZoomChange) onZoomChange(map.getZoom());
+    },
+  });
 
   useEffect(() => {
     if (selectedIncident?.coords) {
-      map.flyTo(selectedIncident.coords, 15, { duration: 1.2 });
+      map.flyTo(selectedIncident.coords, 16, { duration: 1.2 });
     }
   }, [selectedIncident, map]);
 
   useEffect(() => {
-    if (targetLocation?.coords) {
-      map.flyTo(targetLocation.coords, targetLocation.zoom || 13, {
-        duration: 1.5,
+    if (!targetLocation) return;
+
+    if (targetLocation.bounds) {
+      map.fitBounds(targetLocation.bounds, { maxZoom: 15, duration: 1.2 });
+    } else if (targetLocation.coords) {
+      map.flyTo(targetLocation.coords, targetLocation.zoom || 14, {
+        duration: 1.2,
       });
     }
   }, [targetLocation, map]);
@@ -92,39 +102,52 @@ function MapController({ selectedIncident, targetLocation }) {
   return null;
 }
 
-// Tile layers providing Google Maps style details, Satellite Hybrid, OpenStreetMap and Tactical Dark
+// 100% Accurate Google Maps & Global Tile Layers
 const TILE_PROVIDERS = {
-  voyager: {
-    name: "Google Style (Voyager)",
-    description: "Detailed city, country, road & place names just like Google Maps",
-    url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
-    attribution:
-      "&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> &copy; <a href='https://carto.com/attributions'>CARTO</a>",
-    maxZoom: 19,
+  google_streets: {
+    name: "Google Maps (Roadmap)",
+    description: "Official Google Maps: Complete streets, colonies, landmarks & shops up to 21x",
+    url: "https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}",
+    subdomains: ["mt0", "mt1", "mt2", "mt3"],
+    maxZoom: 21,
+    maxNativeZoom: 20,
+    attribution: "&copy; Google Maps",
   },
-  satellite_hybrid: {
-    name: "Satellite (Hybrid)",
-    description: "High-resolution satellite imagery with country, city & road labels",
-    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-    labelsUrl:
-      "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
-    attribution:
-      "Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community",
-    maxZoom: 19,
+  google_hybrid: {
+    name: "Google Satellite (Hybrid)",
+    description: "High-resolution satellite imagery with street, city and place labels",
+    url: "https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
+    subdomains: ["mt0", "mt1", "mt2", "mt3"],
+    maxZoom: 21,
+    maxNativeZoom: 20,
+    attribution: "&copy; Google Maps Imagery",
+  },
+  google_terrain: {
+    name: "Google Terrain",
+    description: "Elevation contour shading, rivers, valleys & complete city labels",
+    url: "https://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}",
+    subdomains: ["mt0", "mt1", "mt2", "mt3"],
+    maxZoom: 20,
+    maxNativeZoom: 18,
+    attribution: "&copy; Google Maps Terrain",
   },
   osm: {
     name: "OpenStreetMap",
     description: "Standard open world street map with all cities and towns",
     url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    attribution: "&copy; OpenStreetMap contributors",
+    subdomains: ["a", "b", "c"],
     maxZoom: 19,
+    maxNativeZoom: 19,
+    attribution: "&copy; OpenStreetMap contributors",
   },
   dark: {
     name: "Tactical Dark",
     description: "Night mode emergency operations center theme",
     url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-    attribution: "&copy; OpenStreetMap &copy; CARTO",
+    subdomains: ["a", "b", "c", "d"],
     maxZoom: 19,
+    maxNativeZoom: 18,
+    attribution: "&copy; OpenStreetMap &copy; CARTO",
   },
 };
 
@@ -138,7 +161,8 @@ export default function CommandMap({
   layers,
   selectedIncident,
 }) {
-  const [activeTile, setActiveTile] = useState("voyager");
+  const [activeTile, setActiveTile] = useState("google_streets");
+  const [currentZoom, setCurrentZoom] = useState(13);
   const [targetLocation, setTargetLocation] = useState({
     name: "Guwahati, Assam (Active Disaster Zone)",
     coords: GUWAHATI_DISASTER_COORDS,
@@ -160,6 +184,17 @@ export default function CommandMap({
     !searchedCity ||
     (Math.abs(targetLocation.coords[0] - 26.158) < 0.8 &&
       Math.abs(targetLocation.coords[1] - 91.738) < 0.8);
+
+  const zoomDetailLabel =
+    currentZoom >= 17
+      ? "Building & Street Level (Max Detail)"
+      : currentZoom >= 14
+      ? "Colony & Road Network"
+      : currentZoom >= 11
+      ? "City & District Overview"
+      : currentZoom >= 6
+      ? "State & Regional Basin"
+      : "National / Continental View";
 
   return (
     <div className="flex-1 relative h-full w-full bg-[#060d1f] overflow-hidden">
@@ -192,7 +227,7 @@ export default function CommandMap({
                 </p>
                 <div className="flex items-center justify-between text-[10px] font-mono text-cyan-300 pt-1 border-t border-slate-800">
                   <span>Sensor: ISRO Bhoonidhi RISAT-1A SAR</span>
-                  <span>14 Marooned Sectors Monitored</span>
+                  <span className="text-emerald-400 font-bold">{zoomDetailLabel} ({currentZoom}x)</span>
                 </div>
               </div>
             ) : (
@@ -219,11 +254,12 @@ export default function CommandMap({
                   </button>
                 </div>
                 <p className="text-[11px] text-slate-300">
-                  Coordinates: {targetLocation?.coords[0].toFixed(4)}°N, {targetLocation?.coords[1].toFixed(4)}°E • Zoom: {targetLocation?.zoom}x
+                  Coordinates: {targetLocation?.coords[0].toFixed(4)}°N, {targetLocation?.coords[1].toFixed(4)}°E • Zoom: {currentZoom}x
                 </p>
-                <p className="text-[10px] font-mono text-slate-400">
-                  Global Earth Observation Mode: Zoom in to inspect local streets, bridges and topography.
-                </p>
+                <div className="flex items-center justify-between text-[10px] font-mono text-cyan-300 pt-1 border-t border-slate-800">
+                  <span>Global Google Maps Accuracy Feed</span>
+                  <span className="text-emerald-400 font-bold">{zoomDetailLabel}</span>
+                </div>
               </div>
             )}
           </div>
@@ -232,36 +268,53 @@ export default function CommandMap({
 
       {/* Basemap Switcher Floating Widget (Top Right) */}
       <div className="absolute top-28 right-3 z-[400] flex flex-col gap-1 bg-[#09152e]/95 backdrop-blur-md border border-cyan-500/40 p-2 rounded-xl shadow-2xl">
-        <span className="text-[9px] font-mono font-bold text-slate-400 uppercase px-1 pb-1 border-b border-slate-800 flex items-center gap-1">
-          <Layers className="w-3 h-3 text-cyan-400" /> Basemap
+        <span className="text-[9px] font-mono font-bold text-slate-400 uppercase px-1 pb-1 border-b border-slate-800 flex items-center justify-between">
+          <span className="flex items-center gap-1">
+            <Layers className="w-3 h-3 text-cyan-400" /> Map Type
+          </span>
+          <span className="text-[8px] text-emerald-400 font-mono">{currentZoom}x</span>
         </span>
 
-        {/* Google Maps Style Voyager */}
+        {/* Google Maps Roadmap */}
         <button
-          onClick={() => setActiveTile("voyager")}
+          onClick={() => setActiveTile("google_streets")}
           className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-medium rounded-lg transition text-left ${
-            activeTile === "voyager"
+            activeTile === "google_streets"
               ? "bg-cyan-600 text-white font-bold shadow"
               : "text-slate-300 hover:bg-slate-800"
           }`}
-          title="Google Maps style with detailed country, city, street names"
+          title="Official Google Maps with 100% accurate streets, colonies, landmarks & shops"
         >
           <MapIcon className="w-3.5 h-3.5 text-cyan-300" />
-          <span>Google Style</span>
+          <span>Google Roadmap</span>
         </button>
 
-        {/* Satellite Hybrid */}
+        {/* Google Maps Hybrid Satellite */}
         <button
-          onClick={() => setActiveTile("satellite_hybrid")}
+          onClick={() => setActiveTile("google_hybrid")}
           className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-medium rounded-lg transition text-left ${
-            activeTile === "satellite_hybrid"
+            activeTile === "google_hybrid"
               ? "bg-cyan-600 text-white font-bold shadow"
               : "text-slate-300 hover:bg-slate-800"
           }`}
-          title="Satellite imagery with superimposed country and city labels"
+          title="Google Satellite imagery with street, city and place labels"
         >
           <Satellite className="w-3.5 h-3.5 text-cyan-300" />
-          <span>Satellite Hybrid</span>
+          <span>Google Satellite</span>
+        </button>
+
+        {/* Google Terrain */}
+        <button
+          onClick={() => setActiveTile("google_terrain")}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-medium rounded-lg transition text-left ${
+            activeTile === "google_terrain"
+              ? "bg-cyan-600 text-white font-bold shadow"
+              : "text-slate-300 hover:bg-slate-800"
+          }`}
+          title="Google Terrain with elevation, topography, contours and all labels"
+        >
+          <Mountain className="w-3.5 h-3.5 text-cyan-300" />
+          <span>Google Terrain</span>
         </button>
 
         {/* Tactical Dark */}
@@ -293,12 +346,12 @@ export default function CommandMap({
         </button>
       </div>
 
-      {/* The Leaflet World Map Container */}
+      {/* The Leaflet World Map Container with up to 21x Zoom */}
       <MapContainer
         center={GUWAHATI_DISASTER_COORDS}
         zoom={13}
         minZoom={2}
-        maxZoom={19}
+        maxZoom={21}
         worldCopyJump={true}
         className="h-full w-full z-10"
         zoomControl={true}
@@ -307,23 +360,16 @@ export default function CommandMap({
         <TileLayer
           key={activeTile}
           url={TILE_PROVIDERS[activeTile].url}
+          subdomains={TILE_PROVIDERS[activeTile].subdomains || ["mt0", "mt1", "mt2", "mt3"]}
           attribution={TILE_PROVIDERS[activeTile].attribution}
-          maxZoom={TILE_PROVIDERS[activeTile].maxZoom || 19}
+          maxZoom={TILE_PROVIDERS[activeTile].maxZoom || 21}
+          maxNativeZoom={TILE_PROVIDERS[activeTile].maxNativeZoom || 20}
         />
-
-        {/* Satellite Reference Labels Overlay (For Satellite Hybrid mode) */}
-        {activeTile === "satellite_hybrid" && (
-          <TileLayer
-            key="satellite-labels"
-            url={TILE_PROVIDERS.satellite_hybrid.labelsUrl}
-            maxZoom={19}
-            zIndex={200}
-          />
-        )}
 
         <MapController
           selectedIncident={selectedIncident}
           targetLocation={targetLocation}
+          onZoomChange={setCurrentZoom}
         />
 
         {/* Searched Location Pin */}
@@ -332,23 +378,39 @@ export default function CommandMap({
             <Popup>
               <div className="text-xs space-y-2 font-mono p-1">
                 <p className="font-bold text-cyan-400 text-sm">📍 {searchedCity.name}</p>
-                <p className="text-slate-300 text-[11px]">{searchedCity.full_name || searchedCity.desc}</p>
+                <p className="text-slate-300 text-[11px] leading-relaxed">
+                  {searchedCity.full_name || searchedCity.desc}
+                </p>
                 <div className="flex gap-2 text-[10px] text-slate-400">
                   <span>Lat: {searchedCity.coords[0].toFixed(4)}</span>
                   <span>Lon: {searchedCity.coords[1].toFixed(4)}</span>
                 </div>
-                <div className="pt-2 border-t border-slate-700 flex gap-2">
+                <div className="pt-2 border-t border-slate-700 flex flex-wrap gap-1.5">
                   <button
                     onClick={() =>
                       setTargetLocation({
                         ...searchedCity,
-                        zoom: Math.min(17, (targetLocation.zoom || 13) + 2),
+                        bounds: null,
+                        zoom: 17,
                         ts: Date.now(),
                       })
                     }
                     className="px-2 py-1 bg-cyan-700 hover:bg-cyan-600 text-white rounded text-[10px] font-bold"
                   >
-                    🔍 Zoom Closer
+                    🔍 Street Level (17x)
+                  </button>
+                  <button
+                    onClick={() =>
+                      setTargetLocation({
+                        ...searchedCity,
+                        bounds: null,
+                        zoom: 14,
+                        ts: Date.now(),
+                      })
+                    }
+                    className="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-[10px] font-bold"
+                  >
+                    🏙️ City View (14x)
                   </button>
                   <button
                     onClick={() =>

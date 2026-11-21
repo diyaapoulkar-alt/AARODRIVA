@@ -210,28 +210,42 @@
     let map, routeLine, sosMarkers = [];
 
     window.onload = function() {
-      map = L.map('map', { center: [26.65, 93.15], zoom: 11, minZoom: 2, maxZoom: 19, worldCopyJump: true });
+      map = L.map('map', { center: [26.65, 93.15], zoom: 11, minZoom: 2, maxZoom: 21, worldCopyJump: true });
       
-      // Google Maps Style (CARTO Voyager with clear Country/City/Street names)
-      const voyagerLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap &copy; CARTO',
-        maxZoom: 19
+      // Official Google Maps Roadmap Tile Layer (100% accurate streets, colonies, shops up to 21x)
+      const googleRoadmap = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+        attribution: '&copy; Google Maps',
+        maxZoom: 21,
+        maxNativeZoom: 20
       }).addTo(map);
+
+      // Google Satellite Hybrid (Satellite + Places & Street Names)
+      const googleHybrid = L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+        attribution: '&copy; Google Maps Imagery',
+        maxZoom: 21,
+        maxNativeZoom: 20
+      });
+
+      // Google Terrain Layer
+      const googleTerrain = L.tileLayer('https://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', {
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+        attribution: '&copy; Google Maps Terrain',
+        maxZoom: 20,
+        maxNativeZoom: 18
+      });
 
       const darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; OpenStreetMap &copy; CARTO',
         maxZoom: 19
       });
 
-      const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles &copy; Esri',
-        maxZoom: 19
-      });
-
       L.control.layers({
-        "🗺️ Google Style (Voyager)": voyagerLayer,
-        "🌑 Tactical Dark": darkLayer,
-        "🛰️ Satellite Imagery": satelliteLayer
+        "🗺️ Google Maps (Roadmap)": googleRoadmap,
+        "🛰️ Google Satellite (Hybrid)": googleHybrid,
+        "⛰️ Google Terrain": googleTerrain,
+        "🌑 Tactical Dark": darkLayer
       }, null, { position: 'topright' }).addTo(map);
 
       // Add Flood Inundation Polygon
