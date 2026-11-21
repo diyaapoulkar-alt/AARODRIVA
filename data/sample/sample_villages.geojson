@@ -1,0 +1,16 @@
+{
+  "type": "FeatureCollection",
+  "name": "Sample_Villages",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "id": "VIL_01", "name": "Dhansiri Riverbank", "population": 640, "is_marooned": true },
+      "geometry": { "type": "Point", "coordinates": [93.120, 26.670] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "id": "VIL_02", "name": "Kaziranga North Hamlet", "population": 380, "is_marooned": true },
+      "geometry": { "type": "Point", "coordinates": [93.175, 26.695] }
+    }
+  ]
+}

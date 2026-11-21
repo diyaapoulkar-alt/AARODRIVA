@@ -1,0 +1,102 @@
+{
+  "type": "FeatureCollection",
+  "name": "Settlements_Golaghat_Floodplain",
+  "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "VIL_01",
+        "name": "Dhansiri Riverbank Settlement",
+        "district": "Golaghat, Assam",
+        "population": 640,
+        "vulnerability": "Critical",
+        "access_status": "Marooned",
+        "medical_facility": false,
+        "flood_proximity_m": 0,
+        "is_marooned": true,
+        "isolation_reason": "Main bridge on State Highway 4 submerged; water level 1.9m"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [93.120, 26.670]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "VIL_02",
+        "name": "Kaziranga North Hamlet",
+        "district": "Golaghat, Assam",
+        "population": 380,
+        "vulnerability": "Severe",
+        "access_status": "Marooned",
+        "medical_facility": false,
+        "flood_proximity_m": 0,
+        "is_marooned": true,
+        "isolation_reason": "Encircled by Brahmaputra floodwaters; accessible only via elevated ridge bypass"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [93.175, 26.695]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "VIL_03",
+        "name": "Bokakhat East Village",
+        "district": "Golaghat, Assam",
+        "population": 520,
+        "vulnerability": "Moderate",
+        "access_status": "At Risk",
+        "medical_facility": true,
+        "flood_proximity_m": 450,
+        "is_marooned": false,
+        "isolation_reason": "Surface water approaching perimeter; arterial road operational"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [93.205, 26.615]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "VIL_04",
+        "name": "Siljuri Ridge Settlement",
+        "district": "Golaghat, Assam",
+        "population": 410,
+        "vulnerability": "Low",
+        "access_status": "Accessible",
+        "medical_facility": true,
+        "flood_proximity_m": 1200,
+        "is_marooned": false,
+        "isolation_reason": "Located on natural elevated ridge; roads clear"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [93.075, 26.565]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "VIL_05",
+        "name": "Numaligarh Outpost",
+        "district": "Golaghat, Assam",
+        "population": 290,
+        "vulnerability": "Low",
+        "access_status": "Accessible",
+        "medical_facility": false,
+        "flood_proximity_m": 2500,
+        "is_marooned": false,
+        "isolation_reason": "Safe high-ground zone; staging area for relief supplies"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [93.185, 26.570]
+      }
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+[
+  {
+    "id": "SOS-101",
+    "village_id": "VIL_01",
+    "village_name": "Dhansiri Riverbank Settlement",
+    "latitude": 26.6715,
+    "longitude": 93.1218,
+    "people_count": 6,
+    "urgency": "critical",
+    "needs": ["medical", "drinking_water", "rescue_boat"],
+    "message": "Elderly patient with high fever; ground floor submerged 1.2m, stranded on rooftop.",
+    "status": "pending",
+    "timestamp": "2026-11-21T17:15:00Z",
+    "gnss_source": "NavIC-compatible L5/S-Band receiver (Simulated)",
+    "offline_queued": false
+  },
+  {
+    "id": "SOS-102",
+    "village_id": "VIL_02",
+    "village_name": "Kaziranga North Hamlet",
+    "latitude": 26.6962,
+    "longitude": 93.1764,
+    "people_count": 14,
+    "urgency": "critical",
+    "needs": ["food", "drinking_water", "infant_supplies"],
+    "message": "Primary school shelter encircled by rising Brahmaputra overflow. Children and women needing immediate evacuation.",
+    "status": "dispatched",
+    "timestamp": "2026-11-21T16:40:00Z",
+    "gnss_source": "NavIC-compatible GNSS (Simulated)",
+    "offline_queued": true
+  },
+  {
+    "id": "SOS-103",
+    "village_id": "VIL_03",
+    "village_name": "Bokakhat East Village",
+    "latitude": 26.6162,
+    "longitude": 93.2065,
+    "people_count": 4,
+    "urgency": "moderate",
+    "needs": ["food"],
+    "message": "Cattle shed damaged; family safe on second floor but food reserves exhausted.",
+    "status": "pending",
+    "timestamp": "2026-11-21T17:50:00Z",
+    "gnss_source": "Device GNSS (NavIC assisted)",
+    "offline_queued": false
+  }
+]
