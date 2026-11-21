@@ -30,6 +30,7 @@ def get_dashboard_metrics():
     # 3. Active SOS Incidents from SQLite database
     active_sos = 14
     stranded_count = 1420
+    conn = None
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -39,9 +40,11 @@ def get_dashboard_metrics():
             active_sos = row["active"]
         if row and row["total_stranded"]:
             stranded_count = row["total_stranded"]
-        conn.close()
     except Exception:
         pass
+    finally:
+        if conn:
+            conn.close()
 
     return {
         "activeSOS": active_sos,
@@ -63,3 +66,11 @@ def get_dashboard_metrics():
             {"time": "18:00", "level": 50.8, "danger": 49.5}
         ]
     }
+
+
+@router.get("/sitrep")
+@router.get("/summary")
+def get_sitrep_metrics_endpoint():
+    """Returns aggregated SITREP summary metrics."""
+    from backend.services.sitrep import get_sitrep_metrics
+    return get_sitrep_metrics()

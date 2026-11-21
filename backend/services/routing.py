@@ -2,7 +2,7 @@ import json
 import math
 import heapq
 from pathlib import Path
-from typing import Dict, List, Any, Tuple, Optional
+from typing import Dict, List, Any, Tuple, Optional, Union
 import networkx as nx
 
 def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -48,7 +48,7 @@ class RescueRouteEngine:
         self.nx_full_graph.clear()
         self.nx_passable_graph.clear()
 
-        # Seed default tactical nodes for Guwahati & Brahmaputra basin
+        # Seed tactical nodes for Guwahati & Brahmaputra basin
         self._seed_guwahati_network()
 
         if self.roads_path.exists():
@@ -182,14 +182,16 @@ class RescueRouteEngine:
         self.adj_list[v].append(edge_data_backward)
 
         # NetworkX Graph synchronization
-        self.nx_full_graph.add_node(u, pos=self.nodes.get(u, (0, 0)))
-        self.nx_full_graph.add_node(v, pos=self.nodes.get(v, (0, 0)))
-        self.nx_full_graph.add_edge(u, v, weight=length_km, is_flooded=is_flooded, road_id=road_id, name=road_name, coordinates=coordinates)
+        u_pos = self.nodes.get(u, (0, 0))
+        v_pos = self.nodes.get(v, (0, 0))
+        self.nx_full_graph.add_node(u, pos=u_pos)
+        self.nx_full_graph.add_node(v, pos=v_pos)
+        self.nx_full_graph.add_edge(u, v, weight=length_km, is_flooded=is_flooded, road_id=road_id, name=road_name, coordinates=coordinates, water_depth_cm=water_depth_cm)
 
         if not is_flooded:
-            self.nx_passable_graph.add_node(u, pos=self.nodes.get(u, (0, 0)))
-            self.nx_passable_graph.add_node(v, pos=self.nodes.get(v, (0, 0)))
-            self.nx_passable_graph.add_edge(u, v, weight=length_km, is_flooded=False, road_id=road_id, name=road_name, coordinates=coordinates)
+            self.nx_passable_graph.add_node(u, pos=u_pos)
+            self.nx_passable_graph.add_node(v, pos=v_pos)
+            self.nx_passable_graph.add_edge(u, v, weight=length_km, is_flooded=False, road_id=road_id, name=road_name, coordinates=coordinates, water_depth_cm=water_depth_cm)
 
     def find_nearest_node(self, lat: float, lon: float) -> str:
         """Finds the closest node on the road network to a given GPS coordinate."""
@@ -203,7 +205,7 @@ class RescueRouteEngine:
         return closest_node or "CAMP_NDRF_01"
 
     def calculate_route_networkx(self, start_node: str, target_node: str, avoid_flooded: bool = True) -> Optional[List[str]]:
-        """NetworkX implementation of Dijkstra shortest path."""
+        """Dijkstra shortest path algorithm implemented through NetworkX."""
         g = self.nx_passable_graph if avoid_flooded else self.nx_full_graph
         if start_node not in g or target_node not in g:
             return None
@@ -248,6 +250,24 @@ class RescueRouteEngine:
                 # Target reached: Calculate realistic ETA (40 km/h avg in flooded regions)
                 eta_mins = max(5, int(round((g_cost / 40.0) * 60)))
 
+                # Generate turn-by-turn navigation instructions
+                directions = self._generate_turn_by_turn(path, road_names, avoided_roads)
+
+                geojson_feature = {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "LineString",
+                        "coordinates": [[pt[1], pt[0]] for pt in route_coords]
+                    },
+                    "properties": {
+                        "start_node": start_node,
+                        "target_node": target_node,
+                        "distance_km": round(g_cost, 2),
+                        "eta_minutes": eta_mins,
+                        "is_safe_bypass": (len(avoided_roads) > 0)
+                    }
+                }
+
                 return {
                     "status": "route_found",
                     "algorithm": "A* Flood-Avoidance (NetworkX Graph)" if use_astar else "Dijkstra Flood-Avoidance (NetworkX Graph)",
@@ -260,8 +280,11 @@ class RescueRouteEngine:
                     "route_roads": road_names,
                     "node_path": path,
                     "route_coordinates": route_coords,
+                    "geojson": geojson_feature,
+                    "turn_by_turn": directions,
                     "is_safe_bypass": (len(avoided_roads) > 0),
-                    "is_direct_unobstructed": (len(avoided_roads) == 0)
+                    "is_direct_unobstructed": (len(avoided_roads) == 0),
+                    "safety_advisory": "Planning suggestions based on satellite flood masks and mapped road data. Field conditions must be verified."
                 }
 
             if u in visited:
@@ -315,6 +338,31 @@ class RescueRouteEngine:
 
         return self._generate_fallback_route(start_node, target_node)
 
+    def _generate_turn_by_turn(self, path: List[str], road_names: List[str], avoided_roads: List[Dict[str, Any]]) -> List[str]:
+        """Generates clear, step-by-step navigation instructions for emergency response teams."""
+        instructions = []
+        if not path:
+            return ["Proceed to destination using verified high-ground corridors."]
+
+        instructions.append(f"1. Depart from {path[0]} on designated rescue corridor.")
+
+        for i in range(len(path) - 1):
+            u, v = path[i], path[i + 1]
+            # Find edge name
+            edge_name = "Connecting Sector"
+            for edge in self.adj_list.get(u, []):
+                if edge["to"] == v:
+                    edge_name = edge["name"]
+                    break
+            instructions.append(f"{i + 2}. Take {edge_name} toward waypoint {v}.")
+
+        if avoided_roads:
+            blocked_str = ", ".join(r["name"] for r in avoided_roads[:2])
+            instructions.append(f"[HAZARD BYPASS ACTIVE]: Circumnavigated submerged hazard ({blocked_str}).")
+
+        instructions.append(f"{len(path) + 1}. Arrive safely at destination {path[-1]}. Establish radio contact on VHF CH-16.")
+        return instructions
+
     def get_all_routes_and_blocked(self) -> Dict[str, Any]:
         """Returns active rescue routes and blocked roads for Leaflet components."""
         r1 = self.calculate_route("CAMP_NDRF_01", "VIL_KHARGHULI", avoid_flooded=True)
@@ -362,7 +410,16 @@ class RescueRouteEngine:
             "activeRoutingEngine": "RescueRoute AI (NetworkX Dijkstra + A*)"
         }
 
-    def _normalize_node_id(self, key: str) -> str:
+    def _normalize_node_id(self, key: Any) -> str:
+        if isinstance(key, (list, tuple)) and len(key) >= 2:
+            return self.find_nearest_node(float(key[0]), float(key[1]))
+        if isinstance(key, str) and "," in key:
+            parts = key.split(",")
+            try:
+                lat, lon = float(parts[0].strip()), float(parts[1].strip())
+                return self.find_nearest_node(lat, lon)
+            except ValueError:
+                pass
         mapping = {
             "camp-1": "CAMP_NDRF_01",
             "CAMP_01": "CAMP_NDRF_01",
@@ -401,8 +458,26 @@ class RescueRouteEngine:
             "route_roads": ["Elevated Perimeter Track"],
             "node_path": [u, "BYPASS_JUNCTION", v],
             "route_coordinates": coords,
+            "geojson": {
+                "type": "Feature",
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [[pt[1], pt[0]] for pt in coords]
+                },
+                "properties": {
+                    "start_node": u,
+                    "target_node": v,
+                    "distance_km": dist
+                }
+            },
+            "turn_by_turn": [
+                f"1. Depart from {u} toward high-elevation embankment.",
+                "2. Bypass low-lying flood corridor via peripheral trail.",
+                f"3. Arrive safely at {v}."
+            ],
             "is_safe_bypass": True,
-            "is_direct_unobstructed": False
+            "is_direct_unobstructed": False,
+            "safety_advisory": "Planning suggestions based on satellite flood masks and mapped road data. Field conditions must be verified."
         }
 
 
