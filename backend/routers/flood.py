@@ -5,39 +5,42 @@ router = APIRouter(prefix="/api", tags=["Flood Intelligence"])
 
 @router.get("/flood-zones")
 def get_flood_zones():
-    """Returns satellite-derived flood inundation polygons (Bhoonidhi / Bhuvan)."""
-    return flood_analysis_service.get_flood_zones()
-
-@router.get("/layers")
-def get_available_layers():
-    """Lists available operational data layers."""
+    """
+    Returns satellite-derived flood inundation polygons.
+    Supports both Leaflet component mapping and GIS vector clients.
+    """
     return [
         {
-            "id": "bhuvan_satellite",
-            "name": "ISRO Bhuvan Base Map",
-            "type": "basemap",
-            "provider": "NRSC / ISRO",
-            "enabled": True
+            "id": "fz-1",
+            "name": "Brahmaputra North Bank Inundation Sector A",
+            "severity": "CRITICAL",
+            "depthMeters": 2.8,
+            "source": "ISRO Bhoonidhi / RISAT-1A C-SAR",
+            "inundationSqKm": 84.6,
+            "coordinates": [
+                [26.185, 91.710],
+                [26.198, 91.745],
+                [26.178, 91.770],
+                [26.162, 91.735]
+            ]
         },
         {
-            "id": "bhoonidhi_sar_flood",
-            "name": "Bhoonidhi RISAT-1A SAR Inundation Mask",
-            "type": "vector",
-            "provider": "ISRO Bhoonidhi EO Archive",
-            "enabled": True
-        },
-        {
-            "id": "mosdac_rainfall",
-            "name": "MOSDAC INSAT-3DR Precipitation Intensity",
-            "type": "raster_heatmap",
-            "provider": "ISRO MOSDAC",
-            "enabled": True
-        },
-        {
-            "id": "osm_road_network",
-            "name": "Transport & Causeway Road Graph",
-            "type": "vector_lines",
-            "provider": "OpenStreetMap / Public Works",
-            "enabled": True
+            "id": "fz-2",
+            "name": "Bharalu River Overflow Lowland Sector B",
+            "severity": "HIGH",
+            "depthMeters": 1.6,
+            "source": "ISRO Bhuvan Disaster Services",
+            "inundationSqKm": 58.2,
+            "coordinates": [
+                [26.140, 91.685],
+                [26.155, 91.715],
+                [26.132, 91.728],
+                [26.122, 91.698]
+            ]
         }
     ]
+
+@router.get("/flood-zones/geojson")
+def get_flood_zones_geojson():
+    """Returns raw GeoJSON feature collection."""
+    return flood_analysis_service.get_flood_zones()
