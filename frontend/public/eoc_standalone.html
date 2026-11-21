@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <title>AARODRIVA AI — Tactical Emergency Operations Centre (EOC)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Leaflet CDN -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            tactical: { 900: '#070b14', 800: '#0f172a', 700: '#1e293b', cyan: '#00f0ff', green: '#10b981', red: '#ef4444' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;500;600;700&display=swap');
+    body { font-family: 'Outfit', sans-serif; background-color: #070b14; color: #f1f5f9; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: #0f172a !important; color: #f8fafc !important; border: 1px solid #334155 !important; }
+  </style>
+</head>
+<body class="bg-tactical-900 text-slate-100 min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="border-b border-slate-800 bg-slate-900/90 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-30">
+    <div class="flex items-center space-x-3.5">
+      <div class="h-10 w-10 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 text-white font-black text-xl">A</div>
+      <div>
+        <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+          AARODRIVA AI
+          <span class="text-[10px] font-mono uppercase bg-cyan-950 text-cyan-400 border border-cyan-800 px-2 py-0.5 rounded-full font-semibold">EOC ACTIVE</span>
+        </h1>
+        <p className="text-xs text-slate-400 font-mono">ISRO Space Intelligence: Bhoonidhi · Bhuvan · MOSDAC | Assam Sector</p>
+      </div>
+    </div>
+    <div class="flex items-center space-x-3 text-xs">
+      <div class="flex items-center space-x-2 bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 font-mono">
+        <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span>NavIC: <strong class="text-emerald-400">7 Locked</strong> (L5/S-Band)</span>
+      </div>
+      <button onclick="openSOSModal()" class="bg-rose-600 hover:bg-rose-500 text-white font-semibold px-3.5 py-1.5 rounded-lg shadow-lg shadow-rose-600/30 cursor-pointer flex items-center gap-1.5">
+        <span>🚨</span><span>Citizen SOS (NavIC)</span>
+      </button>
+      <button onclick="openSitrepModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3.5 py-1.5 rounded-lg cursor-pointer">
+        📋 EOC SITREP
+      </button>
+    </div>
+  </header>
+
+  <!-- Metrics Bar -->
+  <main class="flex-1 p-6 max-w-[1700px] w-full mx-auto flex flex-col gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 border-t-2 border-t-cyan-500">
+        <p class="text-[11px] font-mono uppercase text-slate-400">Satellite Inundation</p>
+        <h3 class="text-2xl font-black text-white font-mono mt-0.5">142.8 <span class="text-sm font-normal text-slate-400">km²</span></h3>
+        <p class="text-[11px] text-cyan-400 font-mono mt-2">Bhoonidhi RISAT-1A SAR</p>
+      </div>
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 border-t-2 border-t-rose-500">
+        <p class="text-[11px] font-mono uppercase text-slate-400">Marooned Settlements</p>
+        <h3 class="text-2xl font-black text-rose-400 font-mono mt-0.5">2 <span class="text-xs text-rose-300 font-normal">Cut Off</span></h3>
+        <p class="text-[11px] text-rose-300 font-mono mt-2">1,020 population at critical risk</p>
+      </div>
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 border-t-2 border-t-amber-500">
+        <p class="text-[11px] font-mono uppercase text-slate-400">Active SOS Distress Beacons</p>
+        <h3 class="text-2xl font-black text-amber-400 font-mono mt-0.5" id="activeSOSCount">3 <span class="text-xs text-slate-400 font-normal">Pending</span></h3>
+        <p class="text-[11px] text-amber-300 font-mono mt-2">24 souls stranded in flood zone</p>
+      </div>
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 border-t-2 border-t-emerald-500">
+        <p class="text-[11px] font-mono uppercase text-slate-400">RescueRoute AI Engine</p>
+        <h3 class="text-2xl font-black text-emerald-400 font-mono mt-0.5" id="routeMetricText">Dijkstra AI</h3>
+        <p class="text-[11px] text-emerald-300 font-mono mt-2" id="routeSubText">Optimal flood bypass ready</p>
+      </div>
+    </div>
+
+    <!-- Main Grid: Map & Incident Queue -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1">
+      <div class="lg:col-span-2 relative h-[600px] rounded-xl overflow-hidden border border-slate-800 shadow-2xl">
+        <div id="map" class="w-full h-full"></div>
+      </div>
+
+      <!-- Incident Queue -->
+      <div class="lg:col-span-1 bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col h-[600px]">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+          <div class="flex items-center gap-2">
+            <span class="h-2.5 w-2.5 rounded-full bg-rose-500 animate-pulse"></span>
+            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-200">Incident Queue</h2>
+          </div>
+          <span class="text-xs font-mono text-cyan-400 bg-cyan-950 px-2 py-0.5 rounded border border-cyan-800">Priority Ranked</span>
+        </div>
+        <div id="incidentList" class="space-y-3 overflow-y-auto flex-1 pr-1"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Citizen SOS Modal -->
+  <div id="sosModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+      <div class="bg-gradient-to-r from-rose-900 to-slate-900 p-4 border-b border-rose-700 flex justify-between items-center">
+        <div class="flex items-center gap-2">
+          <span class="text-2xl animate-pulse">🛰️</span>
+          <div>
+            <h3 class="text-base font-bold text-white">Citizen Distress Beacon</h3>
+            <p class="text-[11px] font-mono text-rose-200">NavIC-Compatible Emergency PWA</p>
+          </div>
+        </div>
+        <button onclick="closeSOSModal()" class="text-slate-400 hover:text-white text-xl">✕</button>
+      </div>
+      <div class="p-5 space-y-4 text-xs">
+        <div class="bg-black/40 border border-emerald-500/40 rounded-lg p-2 font-mono flex justify-between text-emerald-400">
+          <span>● NavIC Lock: 7 Satellites</span>
+          <span class="text-slate-300">Accuracy: ±1.8m</span>
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1 font-mono">Location Settlement</label>
+          <select id="sosVillage" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white">
+            <option value="Dhansiri Riverbank">Dhansiri Riverbank (Marooned Sector)</option>
+            <option value="Kaziranga North Hamlet">Kaziranga North Hamlet (Cut Off)</option>
+            <option value="Bokakhat East Village">Bokakhat East Village</option>
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1 font-mono">People Stranded</label>
+            <input type="number" id="sosPeople" value="4" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white font-mono" />
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1 font-mono">Urgency</label>
+            <select id="sosUrgency" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white">
+              <option value="critical">Critical (Water rising)</option>
+              <option value="high">High (Supplies exhausted)</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1 font-mono">Message / Need</label>
+          <input type="text" id="sosMsg" value="Stranded on rooftop; elderly patient requires medical help" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white" />
+        </div>
+        <div class="flex gap-2 pt-2">
+          <button onclick="closeSOSModal()" class="flex-1 bg-slate-800 text-slate-300 py-2.5 rounded-xl font-medium">Cancel</button>
+          <button onclick="submitNewSOS()" class="flex-1 bg-rose-600 hover:bg-rose-500 text-white font-bold py-2.5 rounded-xl">Transmit SOS</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SITREP Modal -->
+  <div id="sitrepModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl p-5 space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">📋 Operational Situation Briefing (SITREP)</h3>
+        <button onclick="closeSitrepModal()" class="text-slate-400 hover:text-white text-xl">✕</button>
+      </div>
+      <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-xs text-slate-300 leading-relaxed whitespace-pre-line" id="sitrepText"></div>
+      <div class="flex justify-end gap-2">
+        <button onclick="closeSitrepModal()" class="bg-slate-800 text-slate-300 px-4 py-2 rounded-lg text-xs font-semibold">Close</button>
+        <button onclick="downloadSITREP()" class="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-lg text-xs font-bold">Download SITREP (.TXT)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="hidden fixed bottom-6 right-6 z-50 bg-slate-900 border border-cyan-500 text-cyan-300 font-mono text-xs px-4 py-2.5 rounded-xl shadow-2xl"></div>
+
+  <script>
+    // Data definition
+    const floodPolygon = [
+      [26.635, 93.100], [26.685, 93.125], [26.710, 93.165],
+      [26.690, 93.205], [26.645, 93.185], [26.620, 93.135]
+    ];
+
+    const villages = [
+      { id: 'VIL_01', name: 'Dhansiri Riverbank', lat: 26.670, lon: 93.120, pop: 640, marooned: true, reason: 'Bridge submerged 1.4m' },
+      { id: 'VIL_02', name: 'Kaziranga North Hamlet', lat: 26.695, lon: 93.175, pop: 380, marooned: true, reason: 'Encircled by Brahmaputra floodwater' },
+      { id: 'VIL_03', name: 'Bokakhat East Village', lat: 26.615, lon: 93.205, pop: 520, marooned: false, reason: 'Arterial road clear' },
+      { id: 'VIL_04', name: 'Siljuri Ridge Settlement', lat: 26.565, lon: 93.075, pop: 410, marooned: false, reason: 'High-elevation ridge safe' }
+    ];
+
+    const camps = [
+      { id: 'CAMP_01', name: 'NDRF Battalion 12 Base Bokakhat', lat: 26.575, lon: 93.045, boats: 6 }
+    ];
+
+    let sosList = [
+      { id: 'SOS-101', village: 'Dhansiri Riverbank', lat: 26.6715, lon: 93.1218, people: 6, urgency: 'critical', needs: ['medical', 'boat'], status: 'pending', msg: 'Elderly patient with high fever; rooftop shelter' },
+      { id: 'SOS-102', village: 'Kaziranga North Hamlet', lat: 26.6962, lon: 93.1764, people: 14, urgency: 'critical', needs: ['food', 'infant_care'], status: 'dispatched', msg: 'Primary school shelter encircled by rising overflow' },
+      { id: 'SOS-103', village: 'Bokakhat East Village', lat: 26.6162, lon: 93.2065, people: 4, urgency: 'high', needs: ['food'], status: 'pending', msg: 'Cattle shed damaged; waiting on 2nd floor' }
+    ];
+
+    // Safe bypass route coordinates (Dijkstra calculation avoiding flooded causeway)
+    const bypassRoute = [
+      [26.575, 93.045], [26.585, 93.060], [26.595, 93.075],
+      [26.580, 93.105], [26.585, 93.145], [26.590, 93.175],
+      [26.600, 93.195], [26.640, 93.210], [26.675, 93.195],
+      [26.685, 93.160], [26.680, 93.140], [26.670, 93.120]
+    ];
+
+    // Flooded road coordinates (Submerged causeway)
+    const floodedRoad = [
+      [26.595, 93.075], [26.620, 93.090], [26.645, 93.105], [26.670, 93.120]
+    ];
+
+    let map, routeLine, sosMarkers = [];
+
+    window.onload = function() {
+      map = L.map('map', { center: [26.65, 93.15], zoom: 11 });
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; ISRO Bhuvan Thematic & OSM'
+      }).addTo(map);
+
+      // Add Flood Inundation Polygon
+      L.polygon(floodPolygon, {
+        color: '#00f0ff',
+        fillColor: '#00e5ff',
+        fillOpacity: 0.32,
+        weight: 2,
+        dashArray: '4, 4'
+      }).addTo(map).bindPopup("<strong>Bhoonidhi RISAT-1A SAR</strong><br/>Inundation Extent: 142.8 sq km");
+
+      // Add Flooded road in red dashed line
+      L.polyline(floodedRoad, {
+        color: '#ef4444',
+        weight: 4,
+        dashArray: '6, 6'
+      }).addTo(map).bindPopup("<strong>State Highway 4 Causeway</strong><br/>🔴 SUBMERGED 1.4m — IMPASSABLE");
+
+      // Add Villages
+      villages.forEach(v => {
+        const marker = L.circleMarker([v.lat, v.lon], {
+          radius: 9,
+          color: v.marooned ? '#ef4444' : '#10b981',
+          fillColor: v.marooned ? '#ef4444' : '#10b981',
+          fillOpacity: 0.9,
+          weight: 2
+        }).addTo(map);
+        marker.bindPopup(`<strong>${v.name}</strong><br/>Status: <strong>${v.marooned ? '🔴 MAROONED' : '🟢 ACCESSIBLE'}</strong><br/>Population: ${v.pop}<br/>${v.reason}`);
+      });
+
+      // Add Camp
+      camps.forEach(c => {
+        L.marker([c.lat, c.lon]).addTo(map).bindPopup(`<strong>${c.name}</strong><br/>Boats Available: ${c.boats}`);
+      });
+
+      renderIncidents();
+    };
+
+    function renderIncidents() {
+      const container = document.getElementById('incidentList');
+      container.innerHTML = '';
+
+      // Clear previous SOS markers
+      sosMarkers.forEach(m => map.removeLayer(m));
+      sosMarkers = [];
+
+      sosList.forEach(sos => {
+        // Map marker
+        const marker = L.circleMarker([sos.lat, sos.lon], {
+          radius: 8,
+          color: '#ffffff',
+          fillColor: sos.urgency === 'critical' ? '#f43f5e' : '#f59e0b',
+          fillOpacity: 1,
+          weight: 2
+        }).addTo(map);
+        marker.bindPopup(`<strong>${sos.id} (${sos.village})</strong><br/>${sos.people} stranded | ${sos.urgency}<br/>${sos.msg}`);
+        sosMarkers.push(marker);
+
+        // Sidebar card
+        const card = document.createElement('div');
+        card.className = "p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs space-y-2";
+        card.innerHTML = `
+          <div class="flex justify-between items-start">
+            <span class="font-mono text-cyan-400 font-bold">${sos.id}</span>
+            <span class="px-2 py-0.5 rounded font-mono uppercase text-[10px] font-bold ${sos.urgency === 'critical' ? 'bg-rose-950 text-rose-300' : 'bg-amber-950 text-amber-300'}">${sos.urgency}</span>
+          </div>
+          <div class="font-semibold text-white">${sos.village}</div>
+          <div class="text-slate-400 italic">"${sos.msg}"</div>
+          <div class="flex items-center gap-2 pt-1">
+            <span class="bg-slate-800 px-2 py-0.5 rounded text-slate-300 font-mono">👥 ${sos.people} Stranded</span>
+            <button onclick="calculateSafeRoute('${sos.id}')" class="ml-auto bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-2.5 py-1 rounded transition cursor-pointer">
+              🛣️ Route Rescue (AI)
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+      document.getElementById('activeSOSCount').innerHTML = `${sosList.length} <span class="text-xs text-slate-400 font-normal">Pending</span>`;
+    }
+
+    function calculateSafeRoute(sosId) {
+      if (routeLine) map.removeLayer(routeLine);
+
+      // Draw neon green safe bypass route
+      routeLine = L.polyline(bypassRoute, {
+        color: '#10b981',
+        weight: 6,
+        opacity: 0.95
+      }).addTo(map);
+
+      map.fitBounds(routeLine.getBounds(), { padding: [40, 40] });
+
+      document.getElementById('routeMetricText').innerText = '30.9 km';
+      document.getElementById('routeSubText').innerText = 'Bypassed 1 submerged bridge (Safe)';
+      showToast(`RescueRoute AI: Generated 30.9 km safe bypass for ${sosId}`);
+    }
+
+    function openSOSModal() { document.getElementById('sosModal').classList.remove('hidden'); }
+    function closeSOSModal() { document.getElementById('sosModal').classList.add('hidden'); }
+    function openSitrepModal() {
+      const narrative = `AARODRIVA AI EMERGENCY OPERATIONS CENTRE SITUATION REPORT\nRegion: Golaghat & Brahmaputra Basin Floodplain, Assam\nSatellite Sensor: Bhoonidhi RISAT-1A SAR & Bhuvan Flood Services\n\n1. THREAT OVERVIEW:\n• Total Inundation Area: 142.8 sq km\n• Marooned Settlements: 2 (Dhansiri Riverbank, Kaziranga North Hamlet)\n• Population Cut Off: 1,020 souls\n\n2. RESCUE STATUS:\n• Active SOS Beacons: ${sosList.length}\n• Rescue Missions: Active\n• Primary Access Route: High-Ground Ridge Bypass via Bokakhat operational.`;
+      document.getElementById('sitrepText').innerText = narrative;
+      document.getElementById('sitrepModal').classList.remove('hidden');
+    }
+    function closeSitrepModal() { document.getElementById('sitrepModal').classList.add('hidden'); }
+
+    function submitNewSOS() {
+      const village = document.getElementById('sosVillage').value;
+      const people = parseInt(document.getElementById('sosPeople').value) || 4;
+      const urgency = document.getElementById('sosUrgency').value;
+      const msg = document.getElementById('sosMsg').value;
+      const newId = 'SOS-' + Math.floor(100 + Math.random() * 900);
+
+      sosList.unshift({
+        id: newId,
+        village: village,
+        lat: 26.672,
+        lon: 93.123,
+        people: people,
+        urgency: urgency,
+        needs: ['medical'],
+        status: 'pending',
+        msg: msg
+      });
+
+      closeSOSModal();
+      renderIncidents();
+      showToast(`NavIC SOS Beacon ${newId} registered in incident queue!`);
+    }
+
+    function downloadSITREP() {
+      const text = document.getElementById('sitrepText').innerText;
+      const blob = new Blob([text], { type: 'text/plain' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'AARODRIVA_SITREP.txt';
+      a.click();
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.innerText = msg;
+      t.classList.remove('hidden');
+      setTimeout(() => t.classList.add('hidden'), 3500);
+    }
+  </script>
+</body>
+</html>

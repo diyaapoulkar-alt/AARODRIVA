@@ -1,0 +1,28 @@
+{
+  "type": "FeatureCollection",
+  "name": "Sample_Flood_Overlay",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "SAMPLE_FLOOD",
+        "sensor": "ISRO Bhoonidhi RISAT-1A SAR",
+        "inundation_area_sqkm": 142.8
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [93.100, 26.635],
+            [93.125, 26.685],
+            [93.165, 26.710],
+            [93.205, 26.690],
+            [93.185, 26.645],
+            [93.135, 26.620],
+            [93.100, 26.635]
+          ]
+        ]
+      }
+    }
+  ]
+}
