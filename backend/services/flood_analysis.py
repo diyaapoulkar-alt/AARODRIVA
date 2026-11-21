@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 from typing import Dict, List, Any, Optional
-from core.marooned_detector import MaroonedSettlementDetector
+from backend.services.settlement_analysis import MaroonedSettlementDetector, settlement_analysis_service
 
 
 class FloodAnalysisService:
@@ -43,53 +43,22 @@ class FloodAnalysisService:
             return json.load(f)
 
     def get_detector(self, threat_buffer_meters: float = 150.0) -> MaroonedSettlementDetector:
-        return MaroonedSettlementDetector(
-            settlements_geojson=self.get_villages(),
-            road_network_geojson=self.get_roads(),
-            flood_zones_geojson=self.get_flood_zones(),
-            rescue_camps_geojson=self.get_camps(),
-            threat_buffer_meters=threat_buffer_meters
-        )
+        return settlement_analysis_service.get_detector(threat_buffer_meters)
 
     def analyze_marooned_settlements(self, threat_buffer_meters: float = 150.0) -> List[Dict[str, Any]]:
         """
         Evaluates settlements against satellite flood inundation masks and topological road graphs.
         Returns a classified list of settlements with their isolation status.
         """
-        detector = self.get_detector(threat_buffer_meters)
-        analysis = detector.detect_all()
-
-        results = []
-        for s in analysis["settlements"]:
-            is_marooned = (s["status"] == "Access severed")
-            results.append({
-                "village_id": s["settlement_id"],
-                "name": s["name"],
-                "latitude": s["coordinates"][1],
-                "longitude": s["coordinates"][0],
-                "population": s["population"],
-                "vulnerability": "Critical" if is_marooned else ("Moderate" if s["status"] == "At risk" else "Low"),
-                "access_status": s["status"],
-                "is_marooned": is_marooned,
-                "isolation_reason": s["isolation_reason"],
-                "risk_score": s["risk_score"],
-                "risk_factors": s["risk_factors"],
-                "nearest_camp": s["nearest_camp"],
-                "open_connecting_roads": s["open_connecting_roads"],
-                "total_connecting_roads": s["total_connecting_roads"]
-            })
-
-        return results
+        return settlement_analysis_service.analyze_marooned(threat_buffer_meters)
 
     def get_full_analysis(self, threat_buffer_meters: float = 150.0) -> Dict[str, Any]:
         """Returns the full detection output including summary, settlements and GeoJSONs."""
-        detector = self.get_detector(threat_buffer_meters)
-        return detector.detect_all()
+        return settlement_analysis_service.get_full_analysis(threat_buffer_meters)
 
     def get_blocked_roads(self) -> Dict[str, Any]:
         """Returns GeoJSON FeatureCollection of submerged and impassable road segments."""
-        detector = self.get_detector()
-        return detector.road_graph.get_flooded_edges_geojson()
+        return settlement_analysis_service.get_blocked_roads()
 
 
 flood_analysis_service = FloodAnalysisService()

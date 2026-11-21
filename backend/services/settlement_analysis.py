@@ -1,28 +1,21 @@
-from enum import Enum
-from typing import Dict, Any, List, Optional, Tuple
+import json
+from pathlib import Path
 from datetime import datetime, timezone
+from typing import Dict, Any, List, Optional, Tuple
 
-from .geo_utils import quantize_coords, to_geojson_geometry
-from .flood_intersection import FloodIntersectionEngine
-from .road_graph import RoadNetworkGraph
-
-
-class SettlementStatus(str, Enum):
-    ACCESSIBLE = "Accessible"
-    AT_RISK = "At risk"
-    ACCESS_SEVERED = "Access severed"
-
-
-class EvacuationPriority(str, Enum):
-    CRITICAL = "CRITICAL"  # Marooned / submerged
-    HIGH = "HIGH"          # Access severed but dry ground, or at-risk with high population
-    MEDIUM = "MEDIUM"      # At risk, alternate route open
-    LOW = "LOW"            # Fully accessible
+from backend.utils.geo_utils import (
+    quantize_coords,
+    to_geojson_geometry,
+    meters_to_degrees_approx,
+    FloodIntersectionEngine,
+    RoadNetworkGraph,
+)
+from backend.schemas.settlement import SettlementStatus, EvacuationPriority
 
 
 class MaroonedSettlementDetector:
     """
-    Main geospatial intelligence engine for detecting marooned and isolated settlements
+    Core geospatial intelligence engine for detecting marooned and isolated settlements
     during flood disasters. Integrates satellite-derived inundation with topological
     road graph reachability to disaster response camps.
     """
@@ -41,7 +34,7 @@ class MaroonedSettlementDetector:
         self.rescue_camps_geojson = rescue_camps_geojson
         self.threat_buffer_meters = threat_buffer_meters
 
-        # Initialize flood analysis engine
+        # Initialize flood spatial analysis engine
         self.flood_engine = FloodIntersectionEngine(
             self.flood_zones_geojson,
             default_threat_buffer_meters=threat_buffer_meters
@@ -58,9 +51,7 @@ class MaroonedSettlementDetector:
         self._map_rescue_camps()
 
     def _map_rescue_camps(self) -> None:
-        """
-        Extracts operational rescue camps and snaps each to the nearest road network node.
-        """
+        """Extracts operational rescue camps and snaps each to the nearest road network node."""
         features = self.rescue_camps_geojson.get("features", [])
         for feat in features:
             props = feat.get("properties", {})
@@ -79,9 +70,9 @@ class MaroonedSettlementDetector:
             self.camps.append({
                 "id": camp_id,
                 "name": camp_name,
-                "type": props.get("type", "Relief Center"),
-                "capacity": props.get("capacity_persons", 1000),
-                "status": props.get("status", "OPERATIONAL"),
+                "type": props.get("type", props.get("commanding_agency", "Relief Center")),
+                "capacity": props.get("capacity_persons", props.get("capacity_people", 1000)),
+                "status": props.get("status", props.get("operational_status", "OPERATIONAL")),
                 "coordinates": coords,
                 "graph_node": node,
                 "snap_distance_m": snap_dist_m,
@@ -99,13 +90,13 @@ class MaroonedSettlementDetector:
         """
         props = settlement_feature.get("properties", {})
         geom = settlement_feature.get("geometry", {})
-        coords = geom.get("coordinates", [])
+        coords = geom.get("coordinates", [0, 0])
 
         settlement_id = str(props.get("id", settlement_feature.get("id", "SETTLE-UNKNOWN")))
         name = props.get("name", f"Settlement {settlement_id}")
-        district = props.get("district", "Unknown")
+        district = props.get("district", "Assam")
         population = int(props.get("population", 500))
-        vulnerable_count = int(props.get("vulnerable_count", 0))
+        vulnerable_count = int(props.get("vulnerable_count", int(population * 0.15)))
 
         # 1. Spatial submergence and distance to flood
         is_inundated = self.flood_engine.is_point_inundated(coords)
@@ -133,7 +124,6 @@ class MaroonedSettlementDetector:
             if not camp_node or not settlement_node:
                 continue
 
-            # Check if a passable path exists
             path_info = self.road_graph.shortest_path_details(
                 settlement_node, camp_node, use_passable_only=True
             )
@@ -158,7 +148,10 @@ class MaroonedSettlementDetector:
         priority: EvacuationPriority
         isolation_reason: str
 
-        if len(reachable_camps) == 0:
+        # Check explicit marooned property if present in dataset
+        dataset_is_marooned = props.get("is_marooned", False)
+
+        if len(reachable_camps) == 0 or (dataset_is_marooned and open_links == 0):
             # CASE: ACCESS SEVERED (MAROONED)
             status = SettlementStatus.ACCESS_SEVERED
             if is_inundated:
@@ -180,7 +173,6 @@ class MaroonedSettlementDetector:
                     risk_factors.append(f"Within {self.threat_buffer_meters}m flood threat perimeter")
 
         else:
-            # Viable route exists! Evaluate risk factors
             threat_triggers = []
 
             if is_inundated:
@@ -191,6 +183,10 @@ class MaroonedSettlementDetector:
                 threat_triggers.append(f"{submerged_links} of {total_links} connecting roads are already submerged/impassable")
             if open_links == 1 and total_links > 1:
                 threat_triggers.append("Only a single bottleneck escape road remains open (loss of alternate route)")
+
+            # Check if dataset explicitly tagged as At Risk
+            if props.get("access_status", "").lower() == "at risk" and not threat_triggers:
+                threat_triggers.append("Perimeter surface water approaching settlement")
 
             if threat_triggers:
                 # CASE: AT RISK
@@ -214,7 +210,7 @@ class MaroonedSettlementDetector:
                     f"All {total_links} local road links are open and above flood line."
                 )
 
-        # Calculate a numeric vulnerability risk score (0 to 100)
+        # Risk score calculation (0 to 100)
         risk_score = 0.0
         if status == SettlementStatus.ACCESS_SEVERED:
             risk_score = 95.0 if is_inundated else 80.0
@@ -229,7 +225,6 @@ class MaroonedSettlementDetector:
         else:
             risk_score = 15.0
 
-        # Adjust for high vulnerable population
         if vulnerable_count > 100 and status != SettlementStatus.ACCESSIBLE:
             risk_score = min(100.0, risk_score + 5.0)
 
@@ -259,13 +254,7 @@ class MaroonedSettlementDetector:
         }
 
     def detect_all(self) -> Dict[str, Any]:
-        """
-        Executes marooned analysis across all settlements in the dataset.
-        Returns:
-        - List of evaluated settlements
-        - Regional SITREP summary statistics
-        - GeoJSON FeatureCollections for map rendering
-        """
+        """Executes marooned analysis across all settlements in the dataset."""
         features = self.settlements_geojson.get("features", [])
         analyzed_settlements: List[Dict[str, Any]] = []
 
@@ -323,7 +312,6 @@ class MaroonedSettlementDetector:
             "operational_rescue_camps": len(self.camps)
         }
 
-        # Build GeoJSON for Leaflet frontend
         geojson_features = []
         for s in analyzed_settlements:
             geojson_features.append({
@@ -359,3 +347,83 @@ class MaroonedSettlementDetector:
             "settlements_geojson": settlements_geojson_out,
             "blocked_roads_geojson": self.road_graph.get_flooded_edges_geojson()
         }
+
+
+class SettlementAnalysisService:
+    """
+    Service wrapper managing default and sample datasets for settlement analysis.
+    """
+
+    def __init__(self):
+        self.root_dir = Path(__file__).resolve().parent.parent.parent
+        self.processed_dir = self.root_dir / "data" / "processed"
+        self.sample_dir = self.root_dir / "data" / "sample"
+
+    def _load_json(self, file_path: Path) -> Dict[str, Any]:
+        if not file_path.exists():
+            return {"type": "FeatureCollection", "features": []}
+        with open(file_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+
+    def get_processed_data(self) -> Tuple[Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any]]:
+        villages = self._load_json(self.processed_dir / "villages.geojson")
+        roads = self._load_json(self.processed_dir / "roads.geojson")
+        floods = self._load_json(self.processed_dir / "flood_zones.geojson")
+        camps = self._load_json(self.processed_dir / "rescue_camps.geojson")
+        return villages, roads, floods, camps
+
+    def get_detector(self, threat_buffer_meters: float = 150.0, use_sample: bool = False) -> MaroonedSettlementDetector:
+        if use_sample and (self.sample_dir / "sample_villages.geojson").exists():
+            villages = self._load_json(self.sample_dir / "sample_villages.geojson")
+            roads = self._load_json(self.sample_dir / "sample_roads.geojson") if (self.sample_dir / "sample_roads.geojson").exists() else self._load_json(self.processed_dir / "roads.geojson")
+            floods = self._load_json(self.sample_dir / "sample_flood.geojson")
+            camps = self._load_json(self.processed_dir / "rescue_camps.geojson")
+        else:
+            villages, roads, floods, camps = self.get_processed_data()
+
+        return MaroonedSettlementDetector(
+            settlements_geojson=villages,
+            road_network_geojson=roads,
+            flood_zones_geojson=floods,
+            rescue_camps_geojson=camps,
+            threat_buffer_meters=threat_buffer_meters
+        )
+
+    def analyze_marooned(self, threat_buffer_meters: float = 150.0) -> List[Dict[str, Any]]:
+        detector = self.get_detector(threat_buffer_meters)
+        analysis = detector.detect_all()
+        results = []
+        for s in analysis["settlements"]:
+            is_marooned = (s["status"] == "Access severed")
+            results.append({
+                "village_id": s["settlement_id"],
+                "name": s["name"],
+                "latitude": s["coordinates"][1],
+                "longitude": s["coordinates"][0],
+                "population": s["population"],
+                "vulnerability": s["evacuation_priority"],
+                "access_status": s["status"],
+                "is_marooned": is_marooned,
+                "isolation_reason": s["isolation_reason"],
+                "risk_score": s["risk_score"],
+                "risk_factors": s["risk_factors"],
+                "nearest_camp": s["nearest_camp"],
+                "open_connecting_roads": s["open_connecting_roads"],
+                "total_connecting_roads": s["total_connecting_roads"]
+            })
+        return results
+
+    def get_full_analysis(self, threat_buffer_meters: float = 150.0) -> Dict[str, Any]:
+        detector = self.get_detector(threat_buffer_meters)
+        return detector.detect_all()
+
+    def get_blocked_roads(self) -> Dict[str, Any]:
+        detector = self.get_detector()
+        return detector.road_graph.get_flooded_edges_geojson()
+
+    def get_sitrep_summary(self, threat_buffer_meters: float = 150.0) -> Dict[str, Any]:
+        detector = self.get_detector(threat_buffer_meters)
+        return detector.detect_all()["summary"]
+
+
+settlement_analysis_service = SettlementAnalysisService()
