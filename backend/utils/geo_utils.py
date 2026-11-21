@@ -1,6 +1,86 @@
 import math
 from typing import Tuple, List, Dict, Any, Union, Optional
-import networkx as nx
+try:
+    import networkx as nx
+except (ImportError, ModuleNotFoundError):
+    nx = None
+
+class SimpleGraph:
+    def __init__(self):
+        self.nodes = {}
+        self.adj = {}
+        self.edges = {}
+
+    def add_node(self, node, **kwargs):
+        self.nodes[node] = kwargs
+        if node not in self.adj:
+            self.adj[node] = []
+
+    def add_edge(self, u, v, **kwargs):
+        self.add_node(u)
+        self.add_node(v)
+        if v not in self.adj[u]:
+            self.adj[u].append(v)
+        if u not in self.adj[v]:
+            self.adj[v].append(u)
+        self.edges[(u, v)] = kwargs
+        self.edges[(v, u)] = kwargs
+
+    def neighbors(self, node):
+        return self.adj.get(node, [])
+
+    def get_edge_data(self, u, v):
+        return self.edges.get((u, v), {})
+
+    def __contains__(self, node):
+        return node in self.nodes
+
+def graph_has_path(g, source, target):
+    if nx and hasattr(nx, "has_path") and not isinstance(g, SimpleGraph):
+        return nx.has_path(g, source, target)
+    if source not in g or target not in g:
+        return False
+    visited = {source}
+    queue = [source]
+    while queue:
+        curr = queue.pop(0)
+        if curr == target:
+            return True
+        for nbr in g.neighbors(curr):
+            if nbr not in visited:
+                visited.add(nbr)
+                queue.append(nbr)
+    return False
+
+def graph_shortest_path(g, source, target):
+    if nx and hasattr(nx, "shortest_path") and not isinstance(g, SimpleGraph):
+        try:
+            nodes = nx.shortest_path(g, source=source, target=target, weight="weight")
+            length = nx.shortest_path_length(g, source=source, target=target, weight="weight")
+            return nodes, length
+        except Exception:
+            return None, None
+
+    if source not in g or target not in g:
+        return None, None
+
+    import heapq
+    pq = [(0.0, source, [source])]
+    visited = set()
+    while pq:
+        dist, curr, path = heapq.heappop(pq)
+        if curr == target:
+            return path, dist
+        if curr in visited:
+            continue
+        visited.add(curr)
+        for nbr in g.neighbors(curr):
+            w = g.get_edge_data(curr, nbr).get("weight", 1.0)
+            heapq.heappush(pq, (dist + w, nbr, path + [nbr]))
+    return None, None
+
+def create_network_graph():
+    return nx.Graph() if nx else SimpleGraph()
 from shapely.geometry import Point, LineString, Polygon, MultiPolygon, MultiLineString, shape, mapping
 from shapely.geometry.base import BaseGeometry
 from shapely.ops import unary_union
@@ -228,8 +308,8 @@ class RoadNetworkGraph:
     def __init__(self, road_geojson: Dict[str, Any], flood_engine: Optional[FloodIntersectionEngine] = None):
         self.raw_geojson = road_geojson
         self.flood_engine = flood_engine
-        self.full_graph = nx.Graph()
-        self.passable_graph = nx.Graph()
+        self.full_graph = create_network_graph()
+        self.passable_graph = create_network_graph()
         self.edge_records: List[Dict[str, Any]] = []
         self._build_graph()
 
@@ -354,7 +434,7 @@ class RoadNetworkGraph:
         g = self.passable_graph if use_passable_only else self.full_graph
         if source_node not in g or target_node not in g:
             return False
-        return nx.has_path(g, source_node, target_node)
+        return graph_has_path(g, source_node, target_node)
 
     def shortest_path_details(self, source_node: Tuple[float, float], 
                               target_node: Tuple[float, float], 
@@ -363,20 +443,19 @@ class RoadNetworkGraph:
         if source_node not in g or target_node not in g:
             return None
 
-        if not nx.has_path(g, source_node, target_node):
+        if not graph_has_path(g, source_node, target_node):
             return None
 
-        try:
-            path_nodes = nx.shortest_path(g, source=source_node, target=target_node, weight="weight")
-            length_m = nx.shortest_path_length(g, source=source_node, target=target_node, weight="weight")
-            return {
-                "path_nodes": path_nodes,
-                "length_meters": round(length_m, 2),
-                "length_km": round(length_m / 1000.0, 2),
-                "is_passable": use_passable_only
-            }
-        except (nx.NetworkXNoPath, nx.NodeNotFound):
+        path_nodes, length_m = graph_shortest_path(g, source_node, target_node)
+        if not path_nodes:
             return None
+
+        return {
+            "path_nodes": path_nodes,
+            "length_meters": round(length_m, 2),
+            "length_km": round(length_m / 1000.0, 2),
+            "is_passable": use_passable_only
+        }
 
     def get_flooded_edges_geojson(self) -> Dict[str, Any]:
         features = []
