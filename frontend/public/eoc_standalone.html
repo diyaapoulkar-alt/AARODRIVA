@@ -210,10 +210,29 @@
     let map, routeLine, sosMarkers = [];
 
     window.onload = function() {
-      map = L.map('map', { center: [26.65, 93.15], zoom: 11 });
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; ISRO Bhuvan Thematic & OSM'
+      map = L.map('map', { center: [26.65, 93.15], zoom: 11, minZoom: 2, maxZoom: 19, worldCopyJump: true });
+      
+      // Google Maps Style (CARTO Voyager with clear Country/City/Street names)
+      const voyagerLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap &copy; CARTO',
+        maxZoom: 19
       }).addTo(map);
+
+      const darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap &copy; CARTO',
+        maxZoom: 19
+      });
+
+      const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri',
+        maxZoom: 19
+      });
+
+      L.control.layers({
+        "🗺️ Google Style (Voyager)": voyagerLayer,
+        "🌑 Tactical Dark": darkLayer,
+        "🛰️ Satellite Imagery": satelliteLayer
+      }, null, { position: 'topright' }).addTo(map);
 
       // Add Flood Inundation Polygon
       L.polygon(floodPolygon, {
