@@ -13,6 +13,7 @@ export default function App() {
     routes: { rescueRoutes: [], blockedRoads: [] },
     incidents: [],
     camps: [],
+    isBackendOnline: false,
   });
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState(null);
@@ -33,7 +34,7 @@ export default function App() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 15000); // Live poll every 15s
+    const interval = setInterval(loadData, 10000); // Live poll every 10s
     return () => clearInterval(interval);
   }, [loadData]);
 
@@ -52,16 +53,17 @@ export default function App() {
   };
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-[#060d1f] text-slate-100 overflow-hidden">
+    <div className="h-screen w-screen flex flex-col bg-[#060d1f] text-slate-100 overflow-hidden font-sans">
       <Header
         onRefresh={loadData}
         isRefreshing={isRefreshing}
         activeSOSCount={data.metrics.activeSOS || 0}
+        isBackendOnline={data.isBackendOnline}
       />
 
       <MetricCards metrics={data.metrics} />
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative">
         <Sidebar layers={layers} onToggleLayer={handleToggleLayer} />
 
         <CommandMap

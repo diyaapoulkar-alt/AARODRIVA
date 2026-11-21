@@ -1,6 +1,11 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api";
+// AARODRIVA AI - API Service Layer
+// Connects to local FastAPI backend (http://localhost:8000) or falls back to realistic ISRO Brahmaputra simulation.
+// NO EXTERNAL API KEY REQUIRED: All models and data engines run locally and offline-first!
 
-// Realistic fallback data (Guwahati / Brahmaputra Flood Basin)
+const DIRECT_BACKEND = "http://localhost:8000/api";
+const PROXIED_BACKEND = "/api";
+
+// Realistic fallback simulation data (Guwahati / Kamrup Metropolitan, Assam)
 const MOCK_DATA = {
   metrics: {
     activeSOS: 14,
@@ -20,7 +25,7 @@ const MOCK_DATA = {
   floodZones: [
     {
       id: "fz-1",
-      name: "North Bank Inundation Zone A",
+      name: "North Bank Inundation Zone A (Kharghuli / Uzan Bazar)",
       severity: "CRITICAL",
       depthMeters: 2.8,
       coordinates: [
@@ -32,7 +37,7 @@ const MOCK_DATA = {
     },
     {
       id: "fz-2",
-      name: "Low-Lying Riverbed Sector B",
+      name: "Low-Lying Riverbed Sector B (Pandu Lowlands)",
       severity: "HIGH",
       depthMeters: 1.6,
       coordinates: [
@@ -42,13 +47,27 @@ const MOCK_DATA = {
         [26.122, 91.698],
       ],
     },
+    {
+      id: "fz-3",
+      name: "Amingaon Embankment Breach Sector",
+      severity: "CRITICAL",
+      depthMeters: 2.2,
+      coordinates: [
+        [26.180, 91.690],
+        [26.195, 91.710],
+        [26.182, 91.730],
+        [26.168, 91.705],
+      ],
+    },
   ],
   routes: {
     rescueRoutes: [
       {
         id: "rr-1",
-        name: "NDRF Boat Corridor Alpha",
-        etaMinutes: 14,
+        name: "RescueRoute AI: Elevated Ridge Corridor Alpha",
+        description: "Dijkstra optimal bypass via Zoo Road & Dispur Ridge avoiding flooded NH-27",
+        distanceKm: 10.9,
+        etaMinutes: 16,
         status: "CLEAR",
         coordinates: [
           [26.138, 91.785],
@@ -59,8 +78,10 @@ const MOCK_DATA = {
       },
       {
         id: "rr-2",
-        name: "Medical Supply Route Beta",
-        etaMinutes: 22,
+        name: "Medical Evacuation Route Beta (GS Road Elevated Corridor)",
+        description: "High-clearance emergency corridor connecting District Shelter to North Sector",
+        distanceKm: 7.4,
+        etaMinutes: 12,
         status: "CLEAR",
         coordinates: [
           [26.125, 91.755],
@@ -72,8 +93,9 @@ const MOCK_DATA = {
     blockedRoads: [
       {
         id: "br-1",
-        name: "NH-27 River Bridge Approach",
-        reason: "Submerged (1.4m water)",
+        name: "NH-27 Brahmaputra River Bridge Approach",
+        reason: "Submerged (1.4m water depth) — Impassable",
+        waterDepth: 1.4,
         coordinates: [
           [26.158, 91.722],
           [26.169, 91.730],
@@ -82,8 +104,9 @@ const MOCK_DATA = {
       },
       {
         id: "br-2",
-        name: "Sector 4 Embankment Road",
-        reason: "Landslide & Embankment Breach",
+        name: "Sector 4 Embankment Causeway Road",
+        reason: "Embankment Breach & Structural Soil Liquefaction",
+        waterDepth: 1.9,
         coordinates: [
           [26.138, 91.705],
           [26.148, 91.712],
@@ -96,7 +119,7 @@ const MOCK_DATA = {
       id: "SOS-104",
       type: "SOS",
       title: "12 Civilians Trapped on Rooftop",
-      location: "Kharghuli Ward 4",
+      location: "Kharghuli Ward 4 (Brahmaputra Bank)",
       severity: "CRITICAL",
       peopleAffected: 12,
       timestamp: "2 mins ago",
@@ -117,7 +140,7 @@ const MOCK_DATA = {
     {
       id: "SOS-112",
       type: "SOS",
-      title: "School Shelter Water Rising",
+      title: "School Shelter Water Rising Rapidly",
       location: "Pandu Ghat Road",
       severity: "CRITICAL",
       peopleAffected: 28,
@@ -128,7 +151,7 @@ const MOCK_DATA = {
     {
       id: "SOS-115",
       type: "MAROONED",
-      title: "Power Outage & Food Shortage",
+      title: "Power Substation Flooded & Food Shortage",
       location: "Amingaon Lowlands",
       severity: "WARNING",
       peopleAffected: 80,
@@ -140,14 +163,14 @@ const MOCK_DATA = {
   camps: [
     {
       id: "camp-1",
-      name: "NDRF Base & Relief Camp #1",
+      name: "NDRF Base & Relief Camp #1 (Khanapara)",
       capacity: 500,
       occupied: 310,
       coords: [26.138, 91.785],
     },
     {
       id: "camp-2",
-      name: "District Stadium Shelter",
+      name: "District Stadium Disaster Shelter",
       capacity: 800,
       occupied: 490,
       coords: [26.125, 91.755],
@@ -155,37 +178,82 @@ const MOCK_DATA = {
   ],
 };
 
+async function executeRequest(endpoint) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 2500);
+
+  // Try direct backend first, then relative proxied path
+  const candidateUrls = [
+    `${DIRECT_BACKEND}${endpoint}`,
+    `${PROXIED_BACKEND}${endpoint}`,
+  ];
+
+  for (const url of candidateUrls) {
+    try {
+      const res = await fetch(url, { signal: controller.signal });
+      if (res.ok) {
+        clearTimeout(timeoutId);
+        return await res.json();
+      }
+    } catch {
+      // try next
+    }
+  }
+  clearTimeout(timeoutId);
+  throw new Error("Backend offline");
+}
+
 async function fetchWithFallback(endpoint, fallbackValue) {
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
-    const res = await fetch(`${API_BASE}${endpoint}`, { signal: controller.signal });
-    clearTimeout(timeoutId);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
+    return await executeRequest(endpoint);
   } catch {
     return fallbackValue;
   }
 }
 
 export const api = {
+  checkBackendHealth: async () => {
+    try {
+      const data = await executeRequest("/health");
+      return { online: true, details: data };
+    } catch {
+      return { online: false, details: null };
+    }
+  },
+
   getDashboardData: async () => {
-    const [metrics, floodZones, routes, incidents, camps] = await Promise.all([
+    // Probe health concurrently
+    const healthPromise = api.checkBackendHealth();
+
+    const [metrics, floodZones, routes, incidents, camps, health] = await Promise.all([
       fetchWithFallback("/metrics", MOCK_DATA.metrics),
       fetchWithFallback("/flood-zones", MOCK_DATA.floodZones),
       fetchWithFallback("/routes", MOCK_DATA.routes),
       fetchWithFallback("/incidents", MOCK_DATA.incidents),
       fetchWithFallback("/camps", MOCK_DATA.camps),
+      healthPromise,
     ]);
-    return { metrics, floodZones, routes, incidents, camps };
+
+    return {
+      metrics,
+      floodZones,
+      routes,
+      incidents,
+      camps,
+      isBackendOnline: health.online,
+    };
   },
 
   dispatchRescueUnit: async (incidentId) => {
     try {
-      const res = await fetch(`${API_BASE}/incidents/${incidentId}/dispatch`, {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      const res = await fetch(`${DIRECT_BACKEND}/incidents/${incidentId}/dispatch`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
       if (!res.ok) throw new Error("Backend offline");
       return await res.json();
     } catch {
