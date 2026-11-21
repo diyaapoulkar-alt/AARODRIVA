@@ -451,40 +451,91 @@ class MaroonedSettlementDetector:
         open_links = len(connecting_passable)
         submerged_links = total_links - open_links
 
-        # 3. Multi-camp reachability & nearest camp
+        # 3. Check if coordinate is outside active disaster operational theater
+        # (e.g. global search in Tokyo, London, New York, Mumbai, Delhi, Paris, etc.)
+        is_outside_theater = (flood_distance_m > 30000.0 and snap_dist_m > 30000.0)
+
+        # 4. Multi-camp reachability & nearest camp
         reachable_camps = []
         nearest_camp_info = None
         min_camp_dist_km = float("inf")
 
-        for camp in self.camps:
-            camp_node = camp["graph_node"]
-            if not camp_node or not nearest_node:
-                continue
+        if not is_outside_theater:
+            for camp in self.camps:
+                camp_node = camp["graph_node"]
+                if not camp_node or not nearest_node:
+                    continue
 
-            path_info = self.road_graph.shortest_path_details(
-                nearest_node, camp_node, use_passable_only=True
-            )
-            if path_info is not None:
-                camp_entry = {
-                    "camp_id": camp["id"],
-                    "camp_name": camp["name"],
-                    "distance_km": path_info["length_km"],
-                    "waypoints_count": len(path_info["path_nodes"])
+                path_info = self.road_graph.shortest_path_details(
+                    nearest_node, camp_node, use_passable_only=True
+                )
+                if path_info is not None:
+                    camp_entry = {
+                        "camp_id": camp["id"],
+                        "camp_name": camp["name"],
+                        "distance_km": path_info["length_km"],
+                        "waypoints_count": len(path_info["path_nodes"])
+                    }
+                    reachable_camps.append(camp_entry)
+                    if path_info["length_km"] < min_camp_dist_km:
+                        min_camp_dist_km = path_info["length_km"]
+                        nearest_camp_info = camp_entry
+
+        # Fallback to closest camp by Haversine distance
+        if nearest_camp_info is None and self.camps:
+            closest_camp = None
+            closest_dist_m = float("inf")
+            for camp in self.camps:
+                ccoords = camp.get("coordinates", [0, 0])
+                d_m = haversine_distance(coords, ccoords)
+                if d_m < closest_dist_m:
+                    closest_dist_m = d_m
+                    closest_camp = camp
+            if closest_camp:
+                nearest_camp_info = {
+                    "camp_id": closest_camp["id"],
+                    "camp_name": closest_camp["name"],
+                    "distance_km": round(closest_dist_m / 1000.0, 1),
+                    "waypoints_count": 0,
+                    "is_direct_line_severed": not is_outside_theater
                 }
-                reachable_camps.append(camp_entry)
-                if path_info["length_km"] < min_camp_dist_km:
-                    min_camp_dist_km = path_info["length_km"]
-                    nearest_camp_info = camp_entry
 
-        # 4. Status determination
-        if is_inundated or (open_links == 0 and len(reachable_camps) == 0):
+        # 5. Status determination
+        if is_outside_theater:
+            status = "Accessible"
+            priority = "Low"
+            risk_score = 0.0
+            camp_name = nearest_camp_info["camp_name"] if nearest_camp_info else "Disaster Command Hub"
+            camp_dist = nearest_camp_info["distance_km"] if nearest_camp_info else 0.0
+            reason = (
+                f"ACCESSIBLE (GLOBAL HIGH GROUND): Coordinate is clear of active flood disaster theater "
+                f"({round(flood_distance_m / 1000.0, 1):,} km from flood perimeter). Standard transit corridors operational."
+            )
+            route_details = {
+                "route_id": "GLOBAL_CLEAR",
+                "status": "clear",
+                "distance_km": 0.0,
+                "message": "Location is outside disaster theater; no flood evacuation corridor needed.",
+                "coordinates": []
+            }
+            action = "No active flood hazard detected at this global coordinate. Civilian transit operating normally."
+        elif is_inundated or (open_links == 0 and len(reachable_camps) == 0):
             status = "Access severed"
             priority = "Critical" if is_inundated else "High"
             risk_score = 95.0 if is_inundated else 85.0
             reason = (
                 f"MAROONED: Submerged territory or severed road connectivity. "
-                f"0 open vehicular corridors to rescue camps ({submerged_links} blocked links)."
+                f"0 open vehicular corridors to rescue camps ({submerged_links}/{total_links} blocked links)."
             )
+            nearest_camp_id = nearest_camp_info["camp_id"] if nearest_camp_info else (
+                self.camps[0]["id"] if self.camps else "CAMP_NDRF_01"
+            )
+            route_details = rescue_route_engine.calculate_route(
+                start=nearest_camp_id,
+                destination=[lat, lon],
+                avoid_flooded=True
+            )
+            action = "Immediate watercraft extraction required. Direct road transit impassable."
         elif is_threatened or submerged_links > 0:
             status = "At risk"
             priority = "Medium"
@@ -493,22 +544,31 @@ class MaroonedSettlementDetector:
                 f"AT RISK: Proximity to active flood line ({flood_distance_m:.1f}m). "
                 f"Corridors threatened or bottlenecked ({open_links}/{total_links} open links)."
             )
+            nearest_camp_id = nearest_camp_info["camp_id"] if nearest_camp_info else (
+                self.camps[0]["id"] if self.camps else "CAMP_NDRF_01"
+            )
+            route_details = rescue_route_engine.calculate_route(
+                start=nearest_camp_id,
+                destination=[lat, lon],
+                avoid_flooded=True
+            )
+            action = "Relief convoys alert: monitor approaching floodwaters; prepare elevated bypass."
         else:
             status = "Accessible"
             priority = "Low"
             risk_score = 15.0
             camp_name = nearest_camp_info["camp_name"] if nearest_camp_info else "Relief Staging Depot"
-            reason = f"ACCESSIBLE: High ground. Open connection to {camp_name} ({min_camp_dist_km:.1f} km)."
-
-        # 5. Calculate live RescueRoute AI bypass
-        nearest_camp_id = nearest_camp_info["camp_id"] if nearest_camp_info else (
-            self.camps[0]["id"] if self.camps else "CAMP_NDRF_01"
-        )
-        route_details = rescue_route_engine.calculate_route(
-            start=nearest_camp_id,
-            destination=[lat, lon],
-            avoid_flooded=True
-        )
+            dist_str = f"{min_camp_dist_km:.1f} km" if min_camp_dist_km != float("inf") else f"{nearest_camp_info.get('distance_km', 0.0)} km"
+            reason = f"ACCESSIBLE: High ground. Open connection to {camp_name} ({dist_str}). All {total_links} local road links are open and above flood line."
+            nearest_camp_id = nearest_camp_info["camp_id"] if nearest_camp_info else (
+                self.camps[0]["id"] if self.camps else "CAMP_NDRF_01"
+            )
+            route_details = rescue_route_engine.calculate_route(
+                start=nearest_camp_id,
+                destination=[lat, lon],
+                avoid_flooded=True
+            )
+            action = "Normal vehicular corridor intact. Maintain standby VHF communication."
 
         return {
             "place_name": name,
@@ -536,15 +596,7 @@ class MaroonedSettlementDetector:
             "nearest_rescue_camp": nearest_camp_info or (self.camps[0] if self.camps else None),
             "all_reachable_camps": reachable_camps,
             "recommended_rescue_route": route_details,
-            "recommended_action": (
-                "Immediate watercraft extraction required. Direct road transit impassable."
-                if status == "Access severed"
-                else (
-                    "Relief convoys alert: monitor approaching floodwaters; prepare elevated bypass."
-                    if status == "At risk"
-                    else "Normal vehicular corridor intact. Maintain standby VHF communication."
-                )
-            )
+            "recommended_action": action
         }
 
 
