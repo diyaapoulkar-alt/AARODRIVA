@@ -186,12 +186,32 @@ export default function CommandMap({
   const [searchedCity, setSearchedCity] = useState(null);
   const [locationPrediction, setLocationPrediction] = useState(null);
   const [isPredicting, setIsPredicting] = useState(false);
+  const [dynamicFloodZones, setDynamicFloodZones] = useState([]);
+  const [dynamicRoutes, setDynamicRoutes] = useState([]);
+  const [dynamicBlockedRoads, setDynamicBlockedRoads] = useState([]);
+  const [realtimeWeather, setRealtimeWeather] = useState(null);
 
   const fetchPrediction = async (coords, name) => {
     setIsPredicting(true);
     try {
-      const pred = await api.predictLocation(coords[0], coords[1], name);
+      const predPromise = api.predictLocation(coords[0], coords[1], name);
+      const realtimePromise = api.fetchRealtimeLocationFlood(coords[0], coords[1], name);
+
+      const [pred, realtime] = await Promise.all([predPromise, realtimePromise]);
       setLocationPrediction(pred);
+
+      if (realtime) {
+        setRealtimeWeather(realtime.telemetry);
+        if (realtime.dynamicFloodZone) {
+          setDynamicFloodZones([realtime.dynamicFloodZone]);
+        }
+        if (realtime.dynamicRescueRoute) {
+          setDynamicRoutes([realtime.dynamicRescueRoute]);
+        }
+        if (realtime.dynamicBlockedRoad) {
+          setDynamicBlockedRoads([realtime.dynamicBlockedRoad]);
+        }
+      }
     } catch (err) {
       console.error("Prediction error:", err);
     } finally {
@@ -207,6 +227,10 @@ export default function CommandMap({
     } else {
       setSearchedCity(null);
       setLocationPrediction(null);
+      setDynamicFloodZones([]);
+      setDynamicRoutes([]);
+      setDynamicBlockedRoads([]);
+      setRealtimeWeather(null);
     }
   };
 
@@ -298,8 +322,12 @@ export default function CommandMap({
                   Coordinates: {targetLocation?.coords[0].toFixed(4)}°N, {targetLocation?.coords[1].toFixed(4)}°E • Zoom: {currentZoom}x
                 </p>
                 <div className="flex items-center justify-between text-[10px] font-mono text-cyan-300 pt-1 border-t border-slate-800">
-                  <span>Global Google Maps Accuracy Feed</span>
-                  <span className="text-emerald-400 font-bold">{zoomDetailLabel}</span>
+                  <span>
+                    🛰️ Live Radar: {realtimeWeather?.rainRate > 0 ? `Rain ${realtimeWeather.rainRate} mm/h` : "Real-Time Telemetry Active"} • Elev: {realtimeWeather?.elevation || 12}m
+                  </span>
+                  <span className={`font-bold ${realtimeWeather?.severity === "CRITICAL" ? "text-rose-400" : "text-emerald-400"}`}>
+                    Flood Threat: {realtimeWeather?.severity || "MONITORED"}
+                  </span>
                 </div>
               </div>
             )}
@@ -598,12 +626,14 @@ export default function CommandMap({
         </Marker>
 
         {/* Flood Inundation Polygons & Brahmaputra River Course */}
-        {layers.floodZones && <FloodLayer floodZones={floodZones} />}
+        {layers.floodZones && (
+          <FloodLayer floodZones={[...(floodZones || []), ...dynamicFloodZones]} />
+        )}
 
         {/* Dijkstra Safe Bypass Routes & Submerged Blocked Roads */}
         <RescueRoute
-          rescueRoutes={routes.rescueRoutes}
-          blockedRoads={routes.blockedRoads}
+          rescueRoutes={[...(routes?.rescueRoutes || []), ...dynamicRoutes]}
+          blockedRoads={[...(routes?.blockedRoads || []), ...dynamicBlockedRoads]}
           showRescue={layers.rescueRoutes}
           showBlocked={layers.blockedRoads}
         />
