@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import {
   MapPin,
@@ -541,6 +541,41 @@ export default function CommandMap({
               </div>
             </Popup>
           </Marker>
+        )}
+
+        {/* Dynamic AI RescueRoute calculated for clicked/searched point */}
+        {locationPrediction?.recommended_rescue_route?.route_coordinates?.length > 1 && (
+          <Polyline
+            positions={locationPrediction.recommended_rescue_route.route_coordinates}
+            pathOptions={{
+              color: "#10b981",
+              weight: 6,
+              dashArray: "8, 6",
+              opacity: 0.95,
+              lineCap: "round",
+            }}
+          >
+            <Tooltip permanent direction="center">
+              <span className="font-mono text-[10px] font-bold text-emerald-300 bg-emerald-950/90 px-2 py-0.5 rounded border border-emerald-500/60 shadow">
+                ⚡ Dynamic RescueRoute: {locationPrediction.recommended_rescue_route.total_distance_km} km ({locationPrediction.recommended_rescue_route.eta_minutes}m ETA)
+              </span>
+            </Tooltip>
+            <Popup>
+              <div className="text-xs space-y-1 font-mono p-1">
+                <p className="font-bold text-emerald-400">⚡ DYNAMIC RESCUEROUTE AI BYPASS</p>
+                <p className="text-white">To: {locationPrediction.place_name}</p>
+                <p className="text-slate-300">
+                  Total Distance: <span className="font-bold text-emerald-300">{locationPrediction.recommended_rescue_route.total_distance_km} km</span>
+                </p>
+                <p className="text-slate-300">
+                  Estimated Time: <span className="font-bold text-white">{locationPrediction.recommended_rescue_route.eta_minutes} mins</span>
+                </p>
+                <p className="text-cyan-300 text-[10px]">
+                  Bypassing submerged roads via Dijkstra high-ground graph.
+                </p>
+              </div>
+            </Popup>
+          </Polyline>
         )}
 
         {/* Disaster Epicenter Marker (Assam) */}

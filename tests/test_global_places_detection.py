@@ -1,7 +1,13 @@
+import sys
+from pathlib import Path
 import urllib.request
 import urllib.parse
 import json
 import time
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
 
 BASE_URL = "http://127.0.0.1:8000"
 
@@ -54,12 +60,25 @@ GLOBAL_CITIES = [
 ]
 
 
+def check_server_online(base_url):
+    try:
+        with urllib.request.urlopen(f"{base_url}/api/health", timeout=0.5) as res:
+            return res.getcode() == 200
+    except Exception:
+        return False
+
+
 def test_global_predictions():
     print("=" * 80)
     print("AARODRIVA AI — GLOBAL MULTI-CONTINENT DETECTION & PREDICTION TEST")
-    print(f"Target Server: {BASE_URL}")
+    is_live = check_server_online(BASE_URL)
+    mode_str = f"Live HTTP Server ({BASE_URL})" if is_live else "Local Geospatial Engine"
+    print(f"Target Mode: {mode_str}")
     print(f"Total Places Tested: {len(GLOBAL_CITIES)} across all 7 continents")
     print("=" * 80)
+
+    from backend.services.settlement_analysis import settlement_analysis_service
+    detector = settlement_analysis_service.get_detector()
 
     passed_count = 0
     failed_count = 0
@@ -67,19 +86,21 @@ def test_global_predictions():
     start_time = time.time()
 
     for city, lat, lon, country, continent in GLOBAL_CITIES:
-        # Test GET endpoint with query parameters
-        params = urllib.parse.urlencode({
-            "lat": lat,
-            "lon": lon,
-            "name": f"{city}, {country}"
-        })
-        url = f"{BASE_URL}/api/predict/location?{params}"
-
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "AarodrivaTest/1.0"})
-            with urllib.request.urlopen(req, timeout=5) as response:
-                status_code = response.getcode()
-                data = json.loads(response.read().decode("utf-8"))
+            if is_live:
+                params = urllib.parse.urlencode({
+                    "lat": lat,
+                    "lon": lon,
+                    "name": f"{city}, {country}"
+                })
+                url = f"{BASE_URL}/api/predict/location?{params}"
+                req = urllib.request.Request(url, headers={"User-Agent": "AarodrivaTest/1.0"})
+                with urllib.request.urlopen(req, timeout=3) as response:
+                    status_code = response.getcode()
+                    data = json.loads(response.read().decode("utf-8"))
+            else:
+                data = detector.predict_location(lat, lon, f"{city}, {country}")
+                status_code = 200
 
             pred = data.get("prediction", {})
             status = pred.get("access_status")

@@ -1,11 +1,25 @@
 import React, { useEffect, useState } from "react";
-import { ShieldAlert, Radio, RefreshCw, AlertTriangle, CheckCircle2, XCircle, Info, MapPin } from "lucide-react";
+import {
+  ShieldAlert,
+  Radio,
+  RefreshCw,
+  AlertTriangle,
+  CheckCircle2,
+  Info,
+  MapPin,
+  FileText,
+  PhoneCall,
+  Siren,
+} from "lucide-react";
 
 export default function Header({
   onRefresh,
   isRefreshing,
   activeSOSCount,
   isBackendOnline = false,
+  onOpenSitrep,
+  onOpenAuthorities,
+  onOpenSOS,
 }) {
   const [time, setTime] = useState(new Date());
   const [showApiInfo, setShowApiInfo] = useState(false);
@@ -35,17 +49,44 @@ export default function Header({
             <MapPin className="w-3 h-3 text-rose-400 shrink-0" />
             <span className="font-medium text-slate-300">Guwahati, Assam</span>
             <span className="text-slate-600">•</span>
-            <span className="text-[10px] text-cyan-400/90 hidden md:inline font-mono">Brahmaputra Flood Basin</span>
+            <span className="text-[10px] text-cyan-400/90 hidden md:inline font-mono">
+              Brahmaputra Flood Basin
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Live Disaster Alert Banner */}
-      <div className="hidden lg:flex items-center gap-2.5 bg-rose-500/10 border border-rose-500/30 px-3.5 py-1.5 rounded-full">
-        <AlertTriangle className="w-4 h-4 text-rose-400 animate-pulse shrink-0" />
-        <span className="text-xs font-semibold text-rose-300">
-          BRAHMAPUTRA INUNDATION: 1.6m above danger mark • {activeSOSCount} Active SOS
-        </span>
+      {/* Operational Action Shortcuts */}
+      <div className="hidden lg:flex items-center gap-2">
+        {/* Contact Authorities Button */}
+        <button
+          onClick={onOpenAuthorities}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-950/80 hover:bg-rose-900 border border-rose-600/50 text-rose-200 rounded-lg text-xs font-bold transition shadow-sm"
+          title="Contact Nearby Emergency Authorities (NDRF, SDRF, ASDMA, DEOC, 108)"
+        >
+          <PhoneCall className="w-3.5 h-3.5 text-rose-400 animate-pulse" />
+          <span>Authorities Hotline</span>
+        </button>
+
+        {/* EOC SITREP Report Button */}
+        <button
+          onClick={onOpenSitrep}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-600/50 text-cyan-200 rounded-lg text-xs font-bold transition shadow-sm"
+          title="View and Download Comprehensive Flood & Rescue Operations SITREP"
+        >
+          <FileText className="w-3.5 h-3.5 text-cyan-400" />
+          <span>EOC SITREP Report</span>
+        </button>
+
+        {/* Citizen SOS Button */}
+        <button
+          onClick={onOpenSOS}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-950/80 hover:bg-amber-900 border border-amber-600/50 text-amber-200 rounded-lg text-xs font-bold transition shadow-sm"
+          title="Simulate Citizen NavIC Distress Beacon"
+        >
+          <Siren className="w-3.5 h-3.5 text-amber-400" />
+          <span>Citizen SOS</span>
+        </button>
       </div>
 
       {/* Backend Status & Controls */}
@@ -74,6 +115,24 @@ export default function Header({
             </>
           )}
           <Info className="w-3 h-3 text-slate-400 ml-0.5" />
+        </div>
+
+        {/* Mobile Quick Actions dropdown trigger */}
+        <div className="flex lg:hidden items-center gap-1">
+          <button
+            onClick={onOpenAuthorities}
+            className="p-1.5 rounded-lg bg-rose-950 border border-rose-700 text-rose-300"
+            title="Authorities"
+          >
+            <PhoneCall className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={onOpenSitrep}
+            className="p-1.5 rounded-lg bg-cyan-950 border border-cyan-700 text-cyan-300"
+            title="SITREP Report"
+          >
+            <FileText className="w-3.5 h-3.5" />
+          </button>
         </div>
 
         {/* Clock */}
@@ -134,7 +193,7 @@ export default function Header({
               <div className="p-3 bg-cyan-950/40 border border-cyan-500/30 rounded-lg text-cyan-200 space-y-1.5">
                 <p className="font-bold text-white">💡 No API Key Needed!</p>
                 <p>
-                  AARODRIVA AI does not require external third-party paid keys (Google Maps, Mapbox). The GIS graph engine, Dijkstra flood-avoidance routing, and satellite mock feeds run completely locally.
+                  AARODRIVA AI does not require external third-party paid keys (Google Maps, Mapbox). The GIS graph engine, Dijkstra flood-avoidance routing, and satellite feeds run completely locally and sovereignly.
                 </p>
               </div>
 
@@ -144,7 +203,7 @@ export default function Header({
                   python backend/main.py
                 </div>
                 <p className="text-[11px] text-slate-500">
-                  Backend will automatically serve Dijkstra routing at port 8000.
+                  Backend will automatically serve Dijkstra routing & SITREP generation at port 8000.
                 </p>
               </div>
             </div>
