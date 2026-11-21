@@ -6,63 +6,65 @@
 
 @layer base {
   body {
-    background-color: #060d1f;
-    color: #e2e8f0;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     overflow: hidden;
+  }
+
+  .font-mono {
+    font-family: 'IBM Plex Mono', monospace;
+    font-variant-numeric: tabular-nums;
   }
 }
 
-/* Custom Dark Scrollbar */
+/* Clean Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0a1428;
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1e3a5f;
+  background: rgba(100, 116, 139, 0.35);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #38bdf8;
+  background: rgba(14, 165, 233, 0.7);
 }
 
-/* Leaflet Dark UI Overrides */
+/* Leaflet Container & Popup Polish */
 .leaflet-container {
-  background: #060d1f !important;
-  font-family: inherit;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
 }
+
 .leaflet-popup-content-wrapper,
 .leaflet-popup-tip {
-  background: #0b1528 !important;
-  color: #f1f5f9 !important;
-  border: 1px solid #1e3a5f;
-  border-radius: 8px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.7);
-}
-
-/* Custom Tooltip Styling */
-.leaflet-tooltip {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  padding: 0 !important;
-}
-.leaflet-tooltip-top:before,
-.leaflet-tooltip-bottom:before,
-.leaflet-tooltip-left:before,
-.leaflet-tooltip-right:before {
-  display: none !important;
+  background: #0f172a !important;
+  color: #f8fafc !important;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35);
 }
 
 /* Pulsing SOS Marker */
 @keyframes sosPulse {
-  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.8); }
-  70% { transform: scale(1.1); box-shadow: 0 0 0 14px rgba(239, 68, 68, 0); }
-  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.75);
+  }
+  70% {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 14px rgba(239, 68, 68, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
 }
+
 .sos-pulse {
   animation: sosPulse 1.6s infinite;
 }
