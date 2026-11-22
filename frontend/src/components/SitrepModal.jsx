@@ -64,7 +64,7 @@ export default function SitrepModal({ isOpen, onClose, sitrepData }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-3 sm:p-6 overflow-y-auto">
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/85 backdrop-blur-md p-3 sm:p-6 overflow-y-auto">
       <div className="bg-[#0b1325] border border-cyan-500/50 rounded-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden shadow-[0_0_50px_rgba(6,182,212,0.3)] relative animate-in fade-in zoom-in-95 duration-200">
         
         {/* 1. CLASSIFICATION & OFFICIAL MILITARY HEADER */}

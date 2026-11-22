@@ -129,7 +129,7 @@ AUTHORIZED BY: EMERGENCY OPERATIONS CENTRE (EOC) COMMAND`;
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-3 sm:p-4">
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/85 backdrop-blur-md p-3 sm:p-4">
       <div className="bg-[#0b162c] border border-cyan-500/40 rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
         <div className="bg-gradient-to-r from-[#0d1e3d] via-[#102a54] to-[#0d1e3d] p-4 border-b border-cyan-500/30 flex items-center justify-between">

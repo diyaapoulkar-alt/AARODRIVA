@@ -67,7 +67,7 @@ export default function SOSModal({ isOpen, onClose, onSubmitSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
       <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
         {/* Top Header: NavIC Simulation Banner */}
         <div className="bg-gradient-to-r from-rose-900 via-rose-800 to-slate-900 p-4 border-b border-rose-700/50">

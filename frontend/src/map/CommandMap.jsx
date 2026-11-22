@@ -245,11 +245,6 @@ export default function CommandMap({
     fetchPrediction(coords, loc.name);
   };
 
-  const isAssamDisasterZone =
-    !searchedCity ||
-    (Math.abs(targetLocation.coords[0] - 26.158) < 0.8 &&
-      Math.abs(targetLocation.coords[1] - 91.738) < 0.8);
-
   const zoomDetailLabel =
     currentZoom >= 17
       ? "Building & Street Level (Max Detail)"
@@ -268,34 +263,36 @@ export default function CommandMap({
         {/* Google Maps Style Global City Search Bar */}
         <MapSearchBar
           onSelectLocation={handleSelectLocation}
-          currentFocusName={targetLocation?.name}
+          currentFocusName={selectedIncident ? (selectedIncident.title || selectedIncident.location) : targetLocation?.name}
         />
 
         {/* Dynamic Disaster & Reconnaissance HUD Badge */}
         <div className="w-full md:w-auto max-w-xl pointer-events-auto">
           <div className="bg-[#081329]/95 backdrop-blur-md border border-cyan-500/40 rounded-xl p-3 shadow-2xl text-white">
-            {isAssamDisasterZone ? (
+            {selectedIncident ? (
+              /* Case 1: An incident is clicked/focused from IncidentPanel */
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping shrink-0" />
-                    <h2 className="text-xs sm:text-sm font-black tracking-wide text-rose-300 uppercase">
-                      ACTIVE DISASTER: BRAHMAPUTRA FLOOD BASIN
+                    <h2 className="text-xs sm:text-sm font-black tracking-wide text-rose-300 uppercase truncate">
+                      INCIDENT FOCUS: {selectedIncident.title || selectedIncident.id}
                     </h2>
                   </div>
-                  <span className="px-1.5 py-0.2 text-[9px] font-mono bg-rose-950 text-rose-300 border border-rose-700/80 rounded shrink-0">
-                    SEVERITY: RED
+                  <span className="px-1.5 py-0.5 text-[9px] font-mono bg-rose-950 text-rose-300 border border-rose-700/80 rounded shrink-0">
+                    PRIORITY {selectedIncident.severity || "HIGH"} {selectedIncident.triageScore ? `(${selectedIncident.triageScore}/100)` : ""}
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-300 font-medium">
-                  Guwahati & Kamrup Metro, Assam • 26.158°N, 91.738°E • Gauge: 51.1m (+1.6m Above Danger)
+                <p className="text-[11px] text-slate-300 font-medium truncate">
+                  📍 {selectedIncident.location} • {selectedIncident.peopleAffected || 1} Souls Stranded • Status: <span className="font-bold text-amber-300">{selectedIncident.status}</span>
                 </p>
                 <div className="flex items-center justify-between text-[10px] font-mono text-cyan-300 pt-1 border-t border-slate-800">
-                  <span>Sensor: ISRO Bhoonidhi RISAT-1A SAR</span>
+                  <span>Assigned Unit: <strong className="text-emerald-300">{selectedIncident.assignedUnit || "NDRF Quick Response"}</strong></span>
                   <span className="text-emerald-400 font-bold">{zoomDetailLabel} ({currentZoom}x)</span>
                 </div>
               </div>
-            ) : (
+            ) : searchedCity ? (
+              /* Case 2: A location was searched or clicked anywhere on the globe */
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
@@ -313,7 +310,7 @@ export default function CommandMap({
                         type: "active_disaster",
                       })
                     }
-                    className="px-2 py-0.5 text-[10px] font-mono font-bold bg-rose-600 hover:bg-rose-500 text-white rounded transition shadow shrink-0"
+                    className="px-2 py-0.5 text-[10px] font-mono font-bold bg-rose-600 hover:bg-rose-500 text-white rounded transition shadow shrink-0 cursor-pointer"
                   >
                     🚨 Return to Assam EOC
                   </button>
@@ -328,6 +325,28 @@ export default function CommandMap({
                   <span className={`font-bold ${realtimeWeather?.severity === "CRITICAL" ? "text-rose-400" : "text-emerald-400"}`}>
                     Flood Threat: {realtimeWeather?.severity || "MONITORED"}
                   </span>
+                </div>
+              </div>
+            ) : (
+              /* Case 3: Default Active Disaster Overview */
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping shrink-0" />
+                    <h2 className="text-xs sm:text-sm font-black tracking-wide text-rose-300 uppercase">
+                      ACTIVE DISASTER: BRAHMAPUTRA FLOOD BASIN
+                    </h2>
+                  </div>
+                  <span className="px-1.5 py-0.5 text-[9px] font-mono bg-rose-950 text-rose-300 border border-rose-700/80 rounded shrink-0">
+                    SEVERITY: RED
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-300 font-medium">
+                  Guwahati & Kamrup Metro, Assam • 26.158°N, 91.738°E • Gauge: 51.1m (+1.6m Above Danger)
+                </p>
+                <div className="flex items-center justify-between text-[10px] font-mono text-cyan-300 pt-1 border-t border-slate-800">
+                  <span>Sensor: ISRO Bhoonidhi RISAT-1A SAR</span>
+                  <span className="text-emerald-400 font-bold">{zoomDetailLabel} ({currentZoom}x)</span>
                 </div>
               </div>
             )}
