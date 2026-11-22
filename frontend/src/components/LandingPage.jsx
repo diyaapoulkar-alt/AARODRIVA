@@ -121,26 +121,29 @@ export default function LandingPage({
           {/* Mission Category Super-Badge */}
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-cyan-950 to-slate-900 border border-cyan-500/40 text-xs font-mono text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
             <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-spin" style={{ animationDuration: '8s' }} />
-            <span>SPACE-GRADE DISASTER SURVEILLANCE & RESCUE ROUTING</span>
+            <span>SATELLITE-TO-RESCUE INTELLIGENCE PLATFORM</span>
           </div>
 
           {/* 3D Animated Tagline */}
           <div className="space-y-2">
-            <h2 className="text-sm sm:text-base font-mono tracking-widest text-cyan-400 font-bold uppercase flex items-center gap-2">
+            <h2 className="text-xs sm:text-sm font-mono tracking-widest text-cyan-400 font-bold uppercase flex items-center gap-2">
               <span className="inline-block w-8 h-0.5 bg-cyan-400" />
-              PLANETARY OPERATIONAL DIRECTIVE
+              AARODRIVA AI · FROM ORBIT TO ACTION
             </h2>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white leading-[1.08] text-3d-cyber">
-              DETECT. LOCATE. <br />
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white leading-[1.05] text-3d-cyber">
+              SEE THE <br />
+              <span className="text-stroke-cyan">DISASTER.</span> <br />
+              PREDICT THE <br />
+              IMPACT. <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-300 to-emerald-400">
-                RESCUE. PROTECT.
+                SAVE LIVES.
               </span>
             </h1>
           </div>
 
           {/* Deep Description */}
           <p className="text-slate-300 text-sm sm:text-base leading-relaxed max-w-xl font-normal">
-            <strong className="text-white font-semibold">AARODRIVA AI</strong> pairs all-weather C-Band Synthetic Aperture Radar (SAR) with a dynamic topological Dijkstra road graph engine. When severe deluge drowns key transit corridors, the system detects flood perimeters, recalculates zero-risk high-ground bypass routes, and synchronizes real-time extraction corridors for national disaster responders.
+            Satellite-powered geospatial intelligence for faster, smarter, and life-saving disaster response. Pairs all-weather Synthetic Aperture Radar (SAR) with a dynamic topological Dijkstra road graph to detect inundation perimeters and route emergency responders around flood hazard barriers.
           </p>
 
           {/* 4 Feature Capability Cards with 3D Hover Depth */}
