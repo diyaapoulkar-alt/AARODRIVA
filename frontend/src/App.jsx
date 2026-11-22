@@ -124,6 +124,7 @@ export default function App() {
     }));
   };
 
+<<<<<<< HEAD
   // Open SITREP Situation Report Modal
   const handleOpenSitrep = async () => {
     const report = await api.getSitrep();
@@ -156,6 +157,56 @@ export default function App() {
     }));
   };
 
+=======
+  // Feature #2: Submit Citizen SOS Report
+  const handleCitizenSOS = ({ location, waterDepth, peopleAffected, medicalEmergency }) => {
+    const newId = `SOS-${Math.floor(200 + Math.random() * 799)}`;
+    const newIncident = {
+      id: newId,
+      type: "SOS",
+      title: `${waterDepth}-Level Flood${medicalEmergency ? " + Medical Emergency" : ""}`,
+      location,
+      waterDepth,
+      medicalEmergency,
+      severity: waterDepth === "Roof" || medicalEmergency ? "CRITICAL" : "HIGH",
+      peopleAffected,
+      timestamp: "Just now",
+      status: "PENDING",
+      coords: [26.162 + (Math.random() - 0.5) * 0.025, 91.735 + (Math.random() - 0.5) * 0.025],
+    };
+    setData((prev) => ({
+      ...prev,
+      metrics: { ...prev.metrics, activeSOS: (prev.metrics.activeSOS || 0) + 1 },
+      incidents: [newIncident, ...prev.incidents],
+    }));
+    setSelectedIncident({ ...newIncident, triageScore: computeTriageScore(newIncident) });
+  };
+
+  // Feature #6: One-Click District SitRep CSV Download
+  const handleExportSitRep = () => {
+    const header = "Incident ID,Location,People Affected,AI Triage Score,Status,Assigned Unit\n";
+    const rows = rankedIncidents
+      .map(
+        (i) =>
+          `${i.id},"${i.location}",${i.peopleAffected},${i.triageScore},${i.status},"${
+            i.assignedUnit || "Unassigned"
+          }"`
+      )
+      .join("\n");
+    const blob = new Blob([header + rows], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `AARODRIVA_SitRep_${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  if (view === "landing") {
+    return <LandingPage onEnterDashboard={() => setView("dashboard")} />;
+  }
+
+>>>>>>> cc0e267 (feat(frontend): add 3D flood basin landing page, tactical HUD, and map search)
   return (
     <div
       className={`h-screen w-screen flex flex-col overflow-hidden transition-colors ${
@@ -166,10 +217,14 @@ export default function App() {
         onRefresh={loadData}
         isRefreshing={isRefreshing}
         activeSOSCount={data.metrics.activeSOS || 0}
+<<<<<<< HEAD
         isBackendOnline={data.isBackendOnline}
         onOpenSitrep={handleOpenSitrep}
         onOpenAuthorities={() => setIsAuthoritiesOpen(true)}
         onOpenSOS={() => setIsSOSOpen(true)}
+=======
+        isDark={isDark}
+>>>>>>> cc0e267 (feat(frontend): add 3D flood basin landing page, tactical HUD, and map search)
       />
 
       {/* Operations Action Bar with Day/Night Toggle & Citizen SOS Trigger */}
@@ -281,6 +336,7 @@ export default function App() {
         />
       </div>
 
+<<<<<<< HEAD
       {/* Situation Report (SITREP) Modal */}
       <SitrepModal
         isOpen={isSitrepOpen}
@@ -300,6 +356,19 @@ export default function App() {
         isOpen={isSOSOpen}
         onClose={() => setIsSOSOpen(false)}
         onSubmitSuccess={handleSOSSuccess}
+=======
+      <BroadcastModal
+        isOpen={broadcastOpen}
+        onClose={() => setBroadcastOpen(false)}
+        floodZones={projectedFloodZones}
+      />
+
+      <CitizenSOSDrawer
+        isOpen={sosDrawerOpen}
+        onClose={() => setSosDrawerOpen(false)}
+        onSubmitSOS={handleCitizenSOS}
+        isDark={isDark}
+>>>>>>> cc0e267 (feat(frontend): add 3D flood basin landing page, tactical HUD, and map search)
       />
     </div>
   );
