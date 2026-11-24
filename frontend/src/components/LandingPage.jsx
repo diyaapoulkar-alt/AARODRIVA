@@ -1,13 +1,18 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Earth3D from "./Earth3D";
+import AarodrivaLogo from "./AarodrivaLogo";
 import {
-  ShieldAlert,
   FileText,
   PhoneCall,
   ArrowRight,
   Satellite,
   Sparkles,
 } from "lucide-react";
+
+const LINE1 = "SEE THE DISASTER.";
+const LINE2 = "PREDICT THE IMPACT.";
+const LINE3 = "SAVE LIVES.";
+const TOTAL_CHARS = LINE1.length + LINE2.length + LINE3.length;
 
 export default function LandingPage({
   onLaunchMap,
@@ -19,6 +24,54 @@ export default function LandingPage({
 }) {
   const handleLaunch = onLaunchMap || onEnterDashboard;
 
+  // Typewriter effect state
+  const [charCount, setCharCount] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCharCount((prev) => {
+        if (prev < TOTAL_CHARS) {
+          return prev + 1;
+        }
+        return prev;
+      });
+    }, 45);
+
+    // Subtle re-typing cycle every 14 seconds to keep presentation dynamic
+    const cycleTimer = setInterval(() => {
+      setCharCount(0);
+    }, 14000);
+
+    return () => {
+      clearInterval(timer);
+      clearInterval(cycleTimer);
+    };
+  }, []);
+
+  // Compute typed substrings for each line
+  const l1Len = Math.min(LINE1.length, charCount);
+  const l1Text = LINE1.slice(0, l1Len);
+  const l1Prefix = l1Len <= 8 ? l1Text : "SEE THE ";
+  const l1Accent = l1Len > 8 ? l1Text.slice(8) : "";
+
+  const l2Len = Math.max(0, Math.min(LINE2.length, charCount - LINE1.length));
+  const l2Text = LINE2.slice(0, l2Len);
+
+  const l3Len = Math.max(
+    0,
+    Math.min(LINE3.length, charCount - LINE1.length - LINE2.length)
+  );
+  const l3Text = LINE3.slice(0, l3Len);
+
+  const isLine1Active = charCount <= LINE1.length;
+  const isLine2Active =
+    charCount > LINE1.length && charCount <= LINE1.length + LINE2.length;
+  const isLine3Active = charCount > LINE1.length + LINE2.length;
+
+  const Cursor = () => (
+    <span className="inline-block w-1.5 h-[0.85em] bg-cyan-400 animate-pulse ml-1 align-baseline shadow-[0_0_8px_#38bdf8]" />
+  );
+
   return (
     <div className="h-screen w-screen overflow-hidden flex flex-col bg-[#040814] text-slate-100 font-sans relative select-none">
       {/* Background Starry Atmosphere */}
@@ -27,16 +80,9 @@ export default function LandingPage({
 
       {/* 1. TOP DASHBOARD NAVIGATION BAR (Fixed height, perfectly fitted) */}
       <nav className="h-14 sm:h-16 w-full border-b border-slate-800/80 bg-[#060c1d]/90 backdrop-blur-md px-6 lg:px-12 flex items-center justify-between z-30 shrink-0">
-        {/* Brand */}
+        {/* Brand with Elite Logo */}
         <div className="flex items-center gap-3">
-          <div className="relative">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-600 to-sky-400 p-0.5 shadow-[0_0_15px_rgba(6,182,212,0.4)]">
-              <div className="w-full h-full bg-[#071127] rounded-[10px] flex items-center justify-center">
-                <ShieldAlert className="w-4 h-4 text-cyan-400" />
-              </div>
-            </div>
-            <span className="w-2 h-2 rounded-full bg-emerald-400 absolute -top-0.5 -right-0.5 border border-[#071127] animate-ping" />
-          </div>
+          <AarodrivaLogo size={36} animate={true} showGlow={false} />
 
           <div>
             <div className="flex items-center gap-2">
@@ -62,13 +108,21 @@ export default function LandingPage({
             <span className="text-emerald-400 font-bold">OPTIMIZED</span>
           </div>
 
-          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border ${
-            isBackendOnline
-              ? "bg-emerald-950/40 border-emerald-500/40 text-emerald-300"
-              : "bg-amber-950/40 border-amber-500/40 text-amber-300"
-          }`}>
-            <span className={`w-2 h-2 rounded-full ${isBackendOnline ? "bg-emerald-400 animate-pulse" : "bg-amber-400"}`} />
-            <span>{isBackendOnline ? "FASTAPI ENGINE :8000" : "AUTONOMOUS SIM"}</span>
+          <div
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border ${
+              isBackendOnline
+                ? "bg-emerald-950/40 border-emerald-500/40 text-emerald-300"
+                : "bg-amber-950/40 border-amber-500/40 text-amber-300"
+            }`}
+          >
+            <span
+              className={`w-2 h-2 rounded-full ${
+                isBackendOnline ? "bg-emerald-400 animate-pulse" : "bg-amber-400"
+              }`}
+            />
+            <span>
+              {isBackendOnline ? "RENDER ENGINE ONLINE" : "AUTONOMOUS SIM"}
+            </span>
           </div>
         </div>
 
@@ -107,35 +161,50 @@ export default function LandingPage({
 
       {/* 2. MAIN HERO SECTION: 100% SINGLE VIEWPORT (NO SCROLLING) */}
       <main className="flex-1 h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] flex flex-col lg:flex-row items-center justify-between px-6 lg:px-14 max-w-[1600px] mx-auto w-full overflow-hidden relative z-10">
-        
         {/* LEFT COLUMN: Clean, Professional, High-Impact SaaS Layout */}
         <div className="w-full lg:w-[48%] flex flex-col justify-center space-y-4 xl:space-y-5 z-20 py-2">
-          
           {/* Mission Category Super-Badge */}
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-cyan-950/80 to-slate-900 border border-cyan-500/30 text-[10.5px] font-mono text-cyan-300 shadow-sm w-fit">
-            <Sparkles className="w-3 h-3 text-cyan-400 animate-spin" style={{ animationDuration: '8s' }} />
+            <Sparkles
+              className="w-3 h-3 text-cyan-400 animate-spin"
+              style={{ animationDuration: "8s" }}
+            />
             <span>SATELLITE-TO-RESCUE INTELLIGENCE PLATFORM</span>
           </div>
 
-          {/* 3D Animated Tagline (Exact wording requested) */}
-          <div className="space-y-1">
+          {/* 3D Animated Tagline with Real-Time Typing Animation */}
+          <div className="space-y-1 min-h-[175px] sm:min-h-[215px] xl:min-h-[250px]">
             <p className="text-[10px] sm:text-[11px] font-mono tracking-widest text-cyan-400 font-bold uppercase">
               AARODRIVA AI · FROM ORBIT TO ACTION
             </p>
-            <h1 className="text-4xl sm:text-5xl lg:text-[50px] xl:text-[58px] font-black tracking-tight text-white leading-[1.03] text-3d-cyber">
-              SEE THE <br />
-              <span className="text-stroke-cyan">DISASTER.</span> <br />
-              PREDICT THE <br />
-              IMPACT. <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-300 to-emerald-400">
-                SAVE LIVES.
-              </span>
+            <h1 className="text-4xl sm:text-5xl lg:text-[46px] xl:text-[54px] font-black tracking-tight text-white leading-[1.08] text-3d-cyber">
+              <span>{l1Prefix}</span>
+              <br />
+              <span className="text-stroke-cyan">{l1Accent}</span>
+              {isLine1Active && <Cursor />}
+              <br />
+              {l2Len > 0 && (
+                <>
+                  <span>{l2Text}</span>
+                  {isLine2Active && <Cursor />}
+                  <br />
+                </>
+              )}
+              {l3Len > 0 && (
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-300 to-emerald-400">
+                  {l3Text}
+                  {isLine3Active && <Cursor />}
+                </span>
+              )}
             </h1>
           </div>
 
           {/* Concise Professional SaaS Description */}
           <p className="text-slate-300 text-xs sm:text-sm xl:text-base leading-relaxed max-w-lg font-normal">
-            Autonomous C-Band radar flood intelligence paired with dynamic topological Dijkstra road graphs. Detects inundated transit barriers in real time and recalculates zero-risk high-ground evacuation routes for national disaster responders.
+            Autonomous C-Band radar flood intelligence paired with dynamic
+            topological Dijkstra road graphs. Detects inundated transit barriers
+            in real time and recalculates zero-risk high-ground evacuation
+            routes for national disaster responders.
           </p>
 
           {/* Primary Action Buttons */}
@@ -144,7 +213,7 @@ export default function LandingPage({
               onClick={handleLaunch}
               className="px-5 sm:px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 via-sky-400 to-emerald-400 hover:from-cyan-400 hover:to-emerald-300 text-slate-950 font-black text-xs sm:text-sm tracking-wider uppercase flex items-center gap-2.5 shadow-[0_0_25px_rgba(6,182,212,0.6)] hover:shadow-[0_0_40px_rgba(6,182,212,0.9)] transition-all transform hover:scale-105 active:scale-95 cursor-pointer"
             >
-              <span>🚀 LAUNCH COMMAND CENTER</span>
+              <span>LAUNCH COMMAND CENTER</span>
               <ArrowRight className="w-4 h-4" />
             </button>
 
@@ -172,30 +241,39 @@ export default function LandingPage({
           {/* Executive Live Telemetry Ribbon (Horizontal & Compact) */}
           <div className="pt-2.5 border-t border-slate-800/80 flex items-center gap-5 sm:gap-6 text-xs font-mono text-slate-400">
             <div>
-              <span className="text-slate-500 block text-[9px] uppercase tracking-wider">SAR INUNDATION</span>
+              <span className="text-slate-500 block text-[9px] uppercase tracking-wider">
+                SAR INUNDATION
+              </span>
               <span className="text-cyan-400 font-bold text-sm">142.8 km²</span>
             </div>
             <div className="h-6 w-px bg-slate-800" />
             <div>
-              <span className="text-slate-500 block text-[9px] uppercase tracking-wider">MAROONED SOULS</span>
-              <span className="text-rose-400 font-bold text-sm">1,020</span>
+              <span className="text-slate-500 block text-[9px] uppercase tracking-wider">
+                MAROONED SOULS
+              </span>
+              <span className="text-rose-400 font-bold text-sm">3,710</span>
             </div>
             <div className="h-6 w-px bg-slate-800" />
             <div>
-              <span className="text-slate-500 block text-[9px] uppercase tracking-wider">DIJKSTRA SAFETY</span>
-              <span className="text-emerald-400 font-bold text-sm">100% CLEAR</span>
-            </div>
-            <div className="h-6 w-px bg-slate-800" />
-            <div>
-              <span className="text-slate-500 block text-[9px] uppercase tracking-wider">LATENCY</span>
-              <span className="text-amber-400 font-bold text-sm">&lt; 12ms</span>
+              <span className="text-slate-500 block text-[9px] uppercase tracking-wider">
+                SAFE ROUTES
+              </span>
+              <span className="text-emerald-400 font-bold text-sm">
+                100% CLEAR
+              </span>
             </div>
           </div>
         </div>
 
-        {/* RIGHT COLUMN: 3D HALF-EARTH (Fitted directly into viewport) */}
-        <div className="w-full lg:w-[52%] h-full relative flex items-center justify-center lg:justify-end overflow-hidden">
-          <Earth3D />
+        {/* RIGHT COLUMN: 3D Half-Earth (Dives in at the right edge) */}
+        <div className="w-full lg:w-[52%] h-[45vh] lg:h-full relative flex items-center justify-end overflow-visible pointer-events-auto">
+          {/* Ambient Cosmic Radial Glow Behind Earth */}
+          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[420px] lg:w-[580px] h-[420px] lg:h-[580px] bg-gradient-to-l from-cyan-500/20 via-sky-600/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+
+          {/* Earth 3D Canvas Container */}
+          <div className="w-full h-full relative cursor-grab active:cursor-grabbing">
+            <Earth3D onExplore={handleLaunch} />
+          </div>
         </div>
       </main>
     </div>

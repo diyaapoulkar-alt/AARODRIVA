@@ -1,6 +1,10 @@
 # AARODRIVA AI
 ### Satellite-to-Rescue Geospatial Intelligence Platform for Flood Disaster Operations
 
+* **Live Web Application (Vercel):** [https://aarodriva.vercel.app/](https://aarodriva.vercel.app/)
+* **Production API Engine (Render):** [https://aarodriva.onrender.com/](https://aarodriva.onrender.com/)
+* **OpenAPI / Swagger Explorer:** [https://aarodriva.onrender.com/docs](https://aarodriva.onrender.com/docs)
+
 ---
 
 ## 1. Executive Summary
@@ -12,6 +16,7 @@ The system addresses four fundamental operational requirements in disaster logis
 2. **Identification (Topological Settlement Analysis):** Automated detection of marooned human settlements where floodwaters have severed road access networks, independent of whether the village center itself is submerged.
 3. **Logistics Optimization (3D Elevated RescueRoute AI):** Dynamic graph-theoretic pathfinding utilizing Dijkstra algorithms to compute elevated, high-ground evacuation routes bypassing submerged infrastructure.
 4. **Command Synchronization (Automated SITREP & Inter-Agency Relay):** Automated generation of formal Emergency Operations Centre (EOC) Situation Reports with PDF export and a multi-region emergency authorities directory.
+
 
 ---
 
@@ -144,6 +149,14 @@ The directory automatically synchronizes with the geographic location active on 
 * **Australia:** State Emergency Service (SES: 132 500), Triple Zero (000), Australian Maritime Safety Authority (AMSA SAR).
 * **South America (Brazil):** Defesa Civil Nacional (Disque 199), Corpo de Bombeiros Militar (193 SAR), CENAD.
 * **Global International:** UN OCHA ReliefWeb, INSARAG Global Search and Rescue Network, IFRC Geneva.
+
+### 4.5. 3D WebGL Planetary Visualization and Real-Time Typewriter Telemetry
+* **0ms Instant Earth Initialization:** Utilizes procedural canvas texture generation during the initial frame to eliminate white globe rendering delays prior to satellite texture acquisition.
+* **Dynamic Typewriter Telemetry:** The executive landing interface features a synchronized, cadence-timed character-by-character typewriter animation for the mission tagline (`SEE THE DISASTER. PREDICT THE IMPACT. SAVE LIVES.`) equipped with glowing terminal cursors and 3D typography shadows.
+* **Minimalist Orbital Splash Screen:** Streamlined startup sequence presenting an animated radar sweep, high-precision progress meters, and single-click direct command entry.
+
+### 4.6. Identity and Aerospace Crest Architecture
+AARODRIVA utilizes a custom vector geometric crest featuring an aerodynamic delta monogram (`A`), orbital latitude tracks with nodal satellite positions, concentric 360-degree radar crosshairs, and a central glowing emergency telemetry beacon.
 
 ---
 

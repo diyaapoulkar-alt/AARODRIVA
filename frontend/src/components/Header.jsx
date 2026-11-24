@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import AarodrivaLogo from "./AarodrivaLogo";
 import {
   ShieldAlert,
   Radio,
@@ -49,15 +50,7 @@ export default function Header({
         className="flex items-center gap-3 cursor-pointer group"
         title="Return to Landing Page & 3D Earth Mission Overview"
       >
-        <div
-          className={`p-2 rounded-lg border transition ${
-            isDark
-              ? "bg-cyan-500/15 border-cyan-400/40 shadow-sm shadow-cyan-500/10 group-hover:scale-105"
-              : "bg-sky-50 border-sky-300 group-hover:scale-105"
-          }`}
-        >
-          <ShieldAlert className={`w-5 h-5 ${isDark ? "text-cyan-400" : "text-sky-600"}`} />
-        </div>
+        <AarodrivaLogo size={34} animate={false} showGlow={false} className="group-hover:scale-105 transition" />
         <div>
           <div className="flex items-center gap-2">
             <h1
