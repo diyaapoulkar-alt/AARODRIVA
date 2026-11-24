@@ -42,38 +42,38 @@ export default function MetricCards({ metrics, isDark }) {
 
   return (
     <div
-      className={`grid grid-cols-2 lg:grid-cols-5 gap-3 p-3 border-b shrink-0 transition-colors ${
+      className={`flex lg:grid overflow-x-auto lg:grid-cols-5 gap-2.5 p-2 sm:p-3 border-b shrink-0 transition-colors scrollbar-none ${
         isDark ? "bg-[#081022] border-slate-800" : "bg-slate-50 border-slate-200"
       }`}
     >
       {cards.map(({ label, value, accent, bg, icon: Icon }) => (
         <div
           key={label}
-          className={`rounded-xl border px-3.5 py-2.5 flex items-center justify-between shadow-sm ${
+          className={`min-w-[145px] sm:min-w-0 flex-1 rounded-xl border px-3 py-2 flex items-center justify-between shadow-sm shrink-0 ${
             isDark ? "border-slate-800 bg-[#0d1930]" : "border-slate-200 bg-white"
           }`}
         >
           <div>
             <p
-              className={`text-[11px] font-semibold uppercase tracking-wider ${
+              className={`text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider ${
                 isDark ? "text-slate-400" : "text-slate-500"
               }`}
             >
               {label}
             </p>
-            <p className={`text-2xl font-bold font-mono mt-0.5 ${accent}`}>
+            <p className={`text-xl sm:text-2xl font-bold font-mono mt-0.5 ${accent}`}>
               {value ?? "--"}
             </p>
           </div>
-          <div className={`p-2 rounded-lg ${bg}`}>
-            <Icon className={`w-5 h-5 ${accent}`} />
+          <div className={`p-1.5 sm:p-2 rounded-lg ${bg}`}>
+            <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${accent}`} />
           </div>
         </div>
       ))}
 
       {/* River Water Level Sparkline */}
       <div
-        className={`col-span-2 lg:col-span-1 rounded-xl border px-3 py-2 flex flex-col justify-between shadow-sm ${
+        className={`min-w-[170px] sm:min-w-0 flex-1 col-span-2 lg:col-span-1 rounded-xl border px-3 py-2 flex flex-col justify-between shadow-sm shrink-0 ${
           isDark ? "border-slate-800 bg-[#0d1930]" : "border-slate-200 bg-white"
         }`}
       >

@@ -79,21 +79,21 @@ export default function LandingPage({
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b0a_1px,transparent_1px),linear-gradient(to_bottom,#1e293b0a_1px,transparent_1px)] bg-[size:4rem_4rem] pointer-events-none" />
 
       {/* 1. TOP DASHBOARD NAVIGATION BAR (Fixed height, perfectly fitted) */}
-      <nav className="h-14 sm:h-16 w-full border-b border-slate-800/80 bg-[#060c1d]/90 backdrop-blur-md px-6 lg:px-12 flex items-center justify-between z-30 shrink-0">
+      <nav className="h-14 sm:h-16 w-full border-b border-slate-800/80 bg-[#060c1d]/90 backdrop-blur-md px-3.5 sm:px-6 lg:px-12 flex items-center justify-between z-30 shrink-0">
         {/* Brand with Elite Logo */}
-        <div className="flex items-center gap-3">
-          <AarodrivaLogo size={36} animate={true} showGlow={false} />
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <AarodrivaLogo size={32} animate={true} showGlow={false} />
 
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-base sm:text-lg font-black tracking-wider text-white">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="text-sm sm:text-base lg:text-lg font-black tracking-wider text-white">
                 AARODRIVA <span className="text-cyan-400">AI</span>
               </span>
-              <span className="hidden sm:inline-block px-1.5 py-0.2 text-[9px] font-mono font-bold bg-cyan-950 text-cyan-300 border border-cyan-800 rounded">
+              <span className="hidden md:inline-block px-1.5 py-0.2 text-[9px] font-mono font-bold bg-cyan-950 text-cyan-300 border border-cyan-800 rounded">
                 ASTRA 2026
               </span>
             </div>
-            <p className="text-[10px] font-mono text-slate-400 flex items-center gap-1 hidden sm:flex">
+            <p className="text-[9px] sm:text-[10px] font-mono text-slate-400 flex items-center gap-1 hidden sm:flex">
               <Satellite className="w-3 h-3 text-cyan-400" />
               <span>ISRO RISAT-1A SAR TELEMETRY STREAM</span>
             </p>
@@ -127,11 +127,11 @@ export default function LandingPage({
         </div>
 
         {/* Quick Nav Actions */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 sm:gap-2.5">
           {onOpenSitrep && (
             <button
               onClick={onOpenSitrep}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-xs font-semibold text-slate-200 transition cursor-pointer"
+              className="hidden sm:flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-xs font-semibold text-slate-200 transition cursor-pointer"
             >
               <FileText className="w-3.5 h-3.5 text-cyan-400" />
               <span>SITREP</span>
@@ -141,7 +141,7 @@ export default function LandingPage({
           {onOpenAuthorities && (
             <button
               onClick={onOpenAuthorities}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-950/50 hover:bg-rose-900/70 border border-rose-600/40 text-xs font-semibold text-rose-300 transition cursor-pointer"
+              className="hidden sm:flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-rose-950/50 hover:bg-rose-900/70 border border-rose-600/40 text-xs font-semibold text-rose-300 transition cursor-pointer"
             >
               <PhoneCall className="w-3.5 h-3.5 text-rose-400" />
               <span>Hotlines</span>
@@ -151,7 +151,7 @@ export default function LandingPage({
           {/* LAUNCH MAP TOP BUTTON */}
           <button
             onClick={handleLaunch}
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-sky-500 hover:from-cyan-400 hover:to-sky-400 text-slate-950 text-xs font-black tracking-wide shadow-[0_0_15px_rgba(6,182,212,0.5)] transition-all cursor-pointer"
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-sky-500 hover:from-cyan-400 hover:to-sky-400 text-slate-950 text-[11px] sm:text-xs font-black tracking-wide shadow-[0_0_15px_rgba(6,182,212,0.5)] transition-all cursor-pointer shrink-0"
           >
             <span>LAUNCH MAP</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -159,25 +159,25 @@ export default function LandingPage({
         </div>
       </nav>
 
-      {/* 2. MAIN HERO SECTION: 100% SINGLE VIEWPORT (NO SCROLLING) */}
-      <main className="flex-1 h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] flex flex-col lg:flex-row items-center justify-between px-6 lg:px-14 max-w-[1600px] mx-auto w-full overflow-hidden relative z-10">
+      {/* 2. MAIN HERO SECTION: RESPONSIVE SINGLE VIEWPORT / TOUCH SCROLLABLE */}
+      <main className="flex-1 min-h-0 flex flex-col lg:flex-row items-center justify-between px-4 sm:px-6 lg:px-14 max-w-[1600px] mx-auto w-full overflow-y-auto lg:overflow-hidden relative z-10 pb-6 lg:pb-0">
         {/* LEFT COLUMN: Clean, Professional, High-Impact SaaS Layout */}
-        <div className="w-full lg:w-[48%] flex flex-col justify-center space-y-4 xl:space-y-5 z-20 py-2">
+        <div className="w-full lg:w-[48%] flex flex-col justify-center space-y-3.5 sm:space-y-4 xl:space-y-5 z-20 py-3 lg:py-2">
           {/* Mission Category Super-Badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-cyan-950/80 to-slate-900 border border-cyan-500/30 text-[10.5px] font-mono text-cyan-300 shadow-sm w-fit">
+          <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 rounded-full bg-gradient-to-r from-cyan-950/80 to-slate-900 border border-cyan-500/30 text-[9.5px] sm:text-[10.5px] font-mono text-cyan-300 shadow-sm w-fit">
             <Sparkles
-              className="w-3 h-3 text-cyan-400 animate-spin"
+              className="w-3 h-3 text-cyan-400 animate-spin shrink-0"
               style={{ animationDuration: "8s" }}
             />
             <span>SATELLITE-TO-RESCUE INTELLIGENCE PLATFORM</span>
           </div>
 
           {/* 3D Animated Tagline with Real-Time Typing Animation */}
-          <div className="space-y-1 min-h-[175px] sm:min-h-[215px] xl:min-h-[250px]">
-            <p className="text-[10px] sm:text-[11px] font-mono tracking-widest text-cyan-400 font-bold uppercase">
+          <div className="space-y-1 min-h-[135px] sm:min-h-[185px] lg:min-h-[220px]">
+            <p className="text-[9.5px] sm:text-[11px] font-mono tracking-widest text-cyan-400 font-bold uppercase">
               AARODRIVA AI · FROM ORBIT TO ACTION
             </p>
-            <h1 className="text-4xl sm:text-5xl lg:text-[46px] xl:text-[54px] font-black tracking-tight text-white leading-[1.08] text-3d-cyber">
+            <h1 className="text-3xl sm:text-4xl lg:text-[44px] xl:text-[52px] font-black tracking-tight text-white leading-[1.12] text-3d-cyber">
               <span>{l1Prefix}</span>
               <br />
               <span className="text-stroke-cyan">{l1Accent}</span>
@@ -208,67 +208,69 @@ export default function LandingPage({
           </p>
 
           {/* Primary Action Buttons */}
-          <div className="flex flex-wrap items-center gap-3 pt-1">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 pt-1 w-full sm:w-auto">
             <button
               onClick={handleLaunch}
-              className="px-5 sm:px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 via-sky-400 to-emerald-400 hover:from-cyan-400 hover:to-emerald-300 text-slate-950 font-black text-xs sm:text-sm tracking-wider uppercase flex items-center gap-2.5 shadow-[0_0_25px_rgba(6,182,212,0.6)] hover:shadow-[0_0_40px_rgba(6,182,212,0.9)] transition-all transform hover:scale-105 active:scale-95 cursor-pointer"
+              className="w-full sm:w-auto px-5 sm:px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 via-sky-400 to-emerald-400 hover:from-cyan-400 hover:to-emerald-300 text-slate-950 font-black text-xs sm:text-sm tracking-wider uppercase flex items-center justify-center gap-2.5 shadow-[0_0_25px_rgba(6,182,212,0.6)] hover:shadow-[0_0_40px_rgba(6,182,212,0.9)] transition-all transform hover:scale-105 active:scale-95 cursor-pointer"
             >
               <span>LAUNCH COMMAND CENTER</span>
               <ArrowRight className="w-4 h-4" />
             </button>
 
-            {onOpenSitrep && (
-              <button
-                onClick={onOpenSitrep}
-                className="px-4 py-3 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 hover:border-cyan-500/50 text-slate-200 text-xs font-bold tracking-wider uppercase flex items-center gap-2 transition cursor-pointer"
-              >
-                <FileText className="w-3.5 h-3.5 text-cyan-400" />
-                <span>SITREP BRIEFING</span>
-              </button>
-            )}
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              {onOpenSitrep && (
+                <button
+                  onClick={onOpenSitrep}
+                  className="flex-1 sm:flex-initial px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 hover:border-cyan-500/50 text-slate-200 text-xs font-bold tracking-wider uppercase flex items-center justify-center gap-2 transition cursor-pointer"
+                >
+                  <FileText className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>SITREP</span>
+                </button>
+              )}
 
-            {onOpenAuthorities && (
-              <button
-                onClick={onOpenAuthorities}
-                className="px-3.5 py-3 rounded-xl bg-rose-950/40 hover:bg-rose-900/60 border border-rose-600/40 text-rose-300 text-xs font-bold tracking-wider uppercase flex items-center gap-1.5 transition cursor-pointer"
-              >
-                <PhoneCall className="w-3.5 h-3.5 text-rose-400" />
-                <span>HOTLINES</span>
-              </button>
-            )}
+              {onOpenAuthorities && (
+                <button
+                  onClick={onOpenAuthorities}
+                  className="flex-1 sm:flex-initial px-3 sm:px-3.5 py-2.5 sm:py-3 rounded-xl bg-rose-950/40 hover:bg-rose-900/60 border border-rose-600/40 text-rose-300 text-xs font-bold tracking-wider uppercase flex items-center justify-center gap-1.5 transition cursor-pointer"
+                >
+                  <PhoneCall className="w-3.5 h-3.5 text-rose-400" />
+                  <span>HOTLINES</span>
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* Executive Live Telemetry Ribbon (Horizontal & Compact) */}
-          <div className="pt-2.5 border-t border-slate-800/80 flex items-center gap-5 sm:gap-6 text-xs font-mono text-slate-400">
+          {/* Executive Live Telemetry Ribbon */}
+          <div className="pt-2.5 border-t border-slate-800/80 grid grid-cols-3 gap-2 sm:flex sm:items-center sm:gap-6 text-xs font-mono text-slate-400">
             <div>
               <span className="text-slate-500 block text-[9px] uppercase tracking-wider">
                 SAR INUNDATION
               </span>
-              <span className="text-cyan-400 font-bold text-sm">142.8 km²</span>
+              <span className="text-cyan-400 font-bold text-xs sm:text-sm">142.8 km²</span>
             </div>
-            <div className="h-6 w-px bg-slate-800" />
+            <div className="hidden sm:block h-6 w-px bg-slate-800" />
             <div>
               <span className="text-slate-500 block text-[9px] uppercase tracking-wider">
                 MAROONED SOULS
               </span>
-              <span className="text-rose-400 font-bold text-sm">3,710</span>
+              <span className="text-rose-400 font-bold text-xs sm:text-sm">3,710</span>
             </div>
-            <div className="h-6 w-px bg-slate-800" />
+            <div className="hidden sm:block h-6 w-px bg-slate-800" />
             <div>
               <span className="text-slate-500 block text-[9px] uppercase tracking-wider">
                 SAFE ROUTES
               </span>
-              <span className="text-emerald-400 font-bold text-sm">
+              <span className="text-emerald-400 font-bold text-xs sm:text-sm">
                 100% CLEAR
               </span>
             </div>
           </div>
         </div>
 
-        {/* RIGHT COLUMN: 3D Half-Earth (Dives in at the right edge) */}
-        <div className="w-full lg:w-[52%] h-[45vh] lg:h-full relative flex items-center justify-end overflow-visible pointer-events-auto">
+        {/* RIGHT COLUMN: 3D Half-Earth */}
+        <div className="w-full lg:w-[52%] h-[240px] sm:h-[340px] lg:h-full relative flex items-center justify-center lg:justify-end shrink-0 pointer-events-auto my-2 lg:my-0">
           {/* Ambient Cosmic Radial Glow Behind Earth */}
-          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[420px] lg:w-[580px] h-[420px] lg:h-[580px] bg-gradient-to-l from-cyan-500/20 via-sky-600/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[280px] sm:w-[420px] lg:w-[580px] h-[280px] sm:h-[420px] lg:h-[580px] bg-gradient-to-l from-cyan-500/20 via-sky-600/10 to-transparent rounded-full blur-3xl pointer-events-none" />
 
           {/* Earth 3D Canvas Container */}
           <div className="w-full h-full relative cursor-grab active:cursor-grabbing">

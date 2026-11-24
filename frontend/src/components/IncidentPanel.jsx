@@ -17,7 +17,7 @@ export default function IncidentPanel({
 
   return (
     <aside
-      className={`w-80 border-l flex flex-col shrink-0 transition-colors ${
+      className={`w-full lg:w-80 border-l-0 lg:border-l flex flex-col shrink-0 transition-colors ${
         isDark
           ? "bg-[#0a1428] border-slate-800 text-slate-100"
           : "bg-white border-slate-200 text-slate-900"

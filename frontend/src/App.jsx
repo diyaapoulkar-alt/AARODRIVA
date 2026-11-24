@@ -12,7 +12,21 @@ import SOSModal from "./sos/SOSModal";
 import BroadcastModal from "./components/BroadcastModal";
 import CitizenSOSDrawer from "./components/CitizenSOSDrawer";
 import { api } from "./services/api";
-import { PlusCircle, Megaphone, Home, Clock, Sun, Moon, FilePlus2 } from "lucide-react";
+import {
+  PlusCircle,
+  Megaphone,
+  Home,
+  Clock,
+  Sun,
+  Moon,
+  FilePlus2,
+  MapPin,
+  Layers,
+  Siren,
+  FileText,
+  PhoneCall,
+  X,
+} from "lucide-react";
 
 // AI Triage Priority Score Engine (0–100)
 function computeTriageScore(inc) {
@@ -64,6 +78,7 @@ export default function App() {
   const [isAuthoritiesOpen, setIsAuthoritiesOpen] = useState(false);
   const [isSOSOpen, setIsSOSOpen] = useState(false);
   const [activeMapLocation, setActiveMapLocation] = useState(null);
+  const [mobileDrawer, setMobileDrawer] = useState(null); // 'incidents' | 'layers' | null
 
   const loadData = useCallback(async () => {
     setIsRefreshing(true);
@@ -251,7 +266,7 @@ export default function App() {
 
           {/* Operations Action Bar with Daylight/Night Mode & Quick Actions */}
           <div
-            className={`border-b px-4 py-1.5 flex items-center justify-between text-xs shrink-0 ${
+            className={`border-b px-3 sm:px-4 py-1.5 flex flex-wrap items-center justify-between gap-1.5 text-xs shrink-0 ${
               isDark ? "bg-[#091326] border-slate-800" : "bg-white border-slate-200"
             }`}
           >
@@ -260,36 +275,36 @@ export default function App() {
               className="inline-flex items-center gap-1.5 font-semibold opacity-75 hover:opacity-100 transition cursor-pointer"
             >
               <Home className="w-3.5 h-3.5 text-cyan-400" />
-              <span>3D Earth Landing</span>
+              <span>3D Earth</span>
             </button>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <button
                 onClick={() => setIsDark((prev) => !prev)}
-                className={`inline-flex items-center gap-1.5 font-semibold px-3 py-1 rounded-lg border transition cursor-pointer ${
+                className={`inline-flex items-center gap-1 font-semibold px-2 sm:px-3 py-1 rounded-lg border transition cursor-pointer text-[11px] sm:text-xs ${
                   isDark
                     ? "bg-slate-800 border-slate-700 text-amber-300"
                     : "bg-slate-100 border-slate-300 text-slate-800"
                 }`}
               >
                 {isDark ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
-                <span>{isDark ? "Daylight UI" : "Night Ops"}</span>
+                <span className="hidden sm:inline">{isDark ? "Daylight UI" : "Night Ops"}</span>
               </button>
 
               <button
                 onClick={() => setSosDrawerOpen(true)}
-                className="inline-flex items-center gap-1.5 bg-red-600 hover:bg-red-500 text-white font-semibold px-3 py-1 rounded-lg transition cursor-pointer"
+                className="inline-flex items-center gap-1 bg-red-600 hover:bg-red-500 text-white font-semibold px-2.5 sm:px-3 py-1 rounded-lg transition cursor-pointer text-[11px] sm:text-xs"
               >
                 <FilePlus2 className="w-3.5 h-3.5" />
-                <span>Citizen SOS Report</span>
+                <span>Citizen SOS</span>
               </button>
 
               <button
                 onClick={() => setBroadcastOpen(true)}
-                className="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-1 rounded-lg transition cursor-pointer"
+                className="inline-flex items-center gap-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-2.5 sm:px-3 py-1 rounded-lg transition cursor-pointer text-[11px] sm:text-xs"
               >
                 <Megaphone className="w-3.5 h-3.5" />
-                <span>Broadcast Alert</span>
+                <span>Broadcast</span>
               </button>
             </div>
           </div>
@@ -297,14 +312,18 @@ export default function App() {
           <MetricCards metrics={data.metrics} isDark={isDark} />
 
           <div className="flex-1 flex overflow-hidden relative">
-            <Sidebar
-              layers={layers}
-              onToggleLayer={handleToggleLayer}
-              fleet={fleet}
-              isDark={isDark}
-            />
+            {/* Desktop Left Sidebar: docked permanently on desktop, hidden on mobile */}
+            <div className="hidden lg:flex shrink-0">
+              <Sidebar
+                layers={layers}
+                onToggleLayer={handleToggleLayer}
+                fleet={fleet}
+                isDark={isDark}
+              />
+            </div>
 
-            <div className="flex-1 relative flex">
+            {/* Central Tactical GIS Command Map (100% full viewport on phone) */}
+            <div className="flex-1 relative flex h-full w-full">
               <CommandMap
                 floodZones={projectedFloodZones}
                 routes={data.routes}
@@ -318,22 +337,22 @@ export default function App() {
 
               {/* Flood Forecast Time Slider Overlay */}
               <div
-                className={`absolute bottom-5 left-1/2 -translate-x-1/2 z-[400] backdrop-blur-md border px-4 py-2 rounded-2xl shadow-xl flex items-center gap-3 ${
+                className={`absolute bottom-16 sm:bottom-5 left-1/2 -translate-x-1/2 z-[400] backdrop-blur-md border px-3 sm:px-4 py-1.5 sm:py-2 rounded-2xl shadow-xl flex items-center gap-2 sm:gap-3 ${
                   isDark
                     ? "bg-[#0a1428]/90 border-slate-700 text-white"
                     : "bg-white/95 border-slate-300 text-slate-900"
                 }`}
               >
-                <div className="flex items-center gap-1.5 text-xs font-bold text-cyan-500">
-                  <Clock className="w-4 h-4" />
-                  <span>Flood Forecast</span>
+                <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-bold text-cyan-500">
+                  <Clock className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Flood Forecast</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   {[0, 6, 12].map((hr) => (
                     <button
                       key={hr}
                       onClick={() => setForecastHours(hr)}
-                      className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                      className={`px-2.5 sm:px-3 py-1 rounded-lg text-[11px] sm:text-xs font-bold transition cursor-pointer ${
                         forecastHours === hr
                           ? "bg-cyan-500 text-slate-950"
                           : isDark
@@ -346,17 +365,141 @@ export default function App() {
                   ))}
                 </div>
               </div>
+
+              {/* Mobile Bottom Navigation Bar (Phone Only) */}
+              <div className="lg:hidden absolute bottom-2 left-2 right-2 z-[450] bg-[#07132b]/95 backdrop-blur-md border border-cyan-500/40 rounded-2xl p-1.5 shadow-2xl flex items-center justify-around text-xs font-semibold">
+                <button
+                  onClick={() => setMobileDrawer(null)}
+                  className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition cursor-pointer ${
+                    mobileDrawer === null ? "text-cyan-400 font-bold bg-cyan-950/70" : "text-slate-400"
+                  }`}
+                >
+                  <MapPin className="w-4 h-4" />
+                  <span className="text-[10px]">Map</span>
+                </button>
+
+                <button
+                  onClick={() => setMobileDrawer(mobileDrawer === "incidents" ? null : "incidents")}
+                  className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition relative cursor-pointer ${
+                    mobileDrawer === "incidents" ? "text-rose-400 font-bold bg-rose-950/70" : "text-slate-400"
+                  }`}
+                >
+                  <Siren className="w-4 h-4 text-rose-400 animate-pulse" />
+                  <span className="text-[10px]">SOS Queue</span>
+                  {data.metrics?.activeSOS > 0 && (
+                    <span className="absolute -top-1 right-1 w-4 h-4 rounded-full bg-rose-600 text-[9px] font-black text-white flex items-center justify-center">
+                      {data.metrics.activeSOS}
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => setMobileDrawer(mobileDrawer === "layers" ? null : "layers")}
+                  className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition cursor-pointer ${
+                    mobileDrawer === "layers" ? "text-cyan-400 font-bold bg-cyan-950/70" : "text-slate-400"
+                  }`}
+                >
+                  <Layers className="w-4 h-4" />
+                  <span className="text-[10px]">Layers</span>
+                </button>
+
+                <button
+                  onClick={handleOpenSitrep}
+                  className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl text-slate-400 hover:text-cyan-300 transition cursor-pointer"
+                >
+                  <FileText className="w-4 h-4 text-cyan-400" />
+                  <span className="text-[10px]">SITREP</span>
+                </button>
+
+                <button
+                  onClick={() => setIsAuthoritiesOpen(true)}
+                  className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl text-slate-400 hover:text-rose-300 transition cursor-pointer"
+                >
+                  <PhoneCall className="w-4 h-4 text-rose-400" />
+                  <span className="text-[10px]">Hotline</span>
+                </button>
+              </div>
             </div>
 
-            <IncidentPanel
-              incidents={rankedIncidents}
-              selectedIncident={selectedIncident}
-              onSelectIncident={setSelectedIncident}
-              onDispatch={handleDispatch}
-              onExportSitRep={handleExportSitRep}
-              isDark={isDark}
-            />
+            {/* Desktop Right Sidebar: docked permanently on desktop, hidden on mobile */}
+            <div className="hidden lg:flex shrink-0">
+              <IncidentPanel
+                incidents={rankedIncidents}
+                selectedIncident={selectedIncident}
+                onSelectIncident={setSelectedIncident}
+                onDispatch={handleDispatch}
+                onExportSitRep={handleExportSitRep}
+                isDark={isDark}
+              />
+            </div>
           </div>
+
+          {/* Mobile Bottom Sheet Drawer for SOS Queue */}
+          {mobileDrawer === "incidents" && (
+            <div className="lg:hidden fixed inset-0 z-[500] bg-black/75 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200">
+              <div className="bg-[#0a1428] border-t border-cyan-500/40 rounded-t-3xl max-h-[82vh] flex flex-col overflow-hidden shadow-2xl">
+                <div className="flex items-center justify-between p-3.5 border-b border-slate-800 bg-[#0d1c38]">
+                  <div className="flex items-center gap-2">
+                    <Siren className="w-4 h-4 text-rose-400" />
+                    <h3 className="text-sm font-bold text-white uppercase tracking-wide">
+                      AI-Ranked SOS Incidents
+                    </h3>
+                  </div>
+                  <button
+                    onClick={() => setMobileDrawer(null)}
+                    className="text-slate-300 hover:text-white p-1 rounded-lg bg-slate-800 text-xs px-2.5 py-1 font-bold flex items-center gap-1 cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    <span>Close</span>
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto">
+                  <IncidentPanel
+                    incidents={rankedIncidents}
+                    selectedIncident={selectedIncident}
+                    onSelectIncident={(inc) => {
+                      setSelectedIncident(inc);
+                      setMobileDrawer(null);
+                    }}
+                    onDispatch={handleDispatch}
+                    onExportSitRep={handleExportSitRep}
+                    isDark={isDark}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Mobile Bottom Sheet Drawer for Layers & Fleet */}
+          {mobileDrawer === "layers" && (
+            <div className="lg:hidden fixed inset-0 z-[500] bg-black/75 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200">
+              <div className="bg-[#0a1428] border-t border-cyan-500/40 rounded-t-3xl max-h-[82vh] flex flex-col overflow-hidden shadow-2xl">
+                <div className="flex items-center justify-between p-3.5 border-b border-slate-800 bg-[#0d1c38]">
+                  <div className="flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-cyan-400" />
+                    <h3 className="text-sm font-bold text-white uppercase tracking-wide">
+                      Map Layers & Fleet
+                    </h3>
+                  </div>
+                  <button
+                    onClick={() => setMobileDrawer(null)}
+                    className="text-slate-300 hover:text-white p-1 rounded-lg bg-slate-800 text-xs px-2.5 py-1 font-bold flex items-center gap-1 cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    <span>Close</span>
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto">
+                  <Sidebar
+                    layers={layers}
+                    onToggleLayer={handleToggleLayer}
+                    fleet={fleet}
+                    isDark={isDark}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

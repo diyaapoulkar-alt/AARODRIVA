@@ -178,7 +178,10 @@ export default function CommandMap({
 }) {
   const [activeTile, setActiveTile] = useState("google_streets");
   const [currentZoom, setCurrentZoom] = useState(13);
-  const [isHudMinimized, setIsHudMinimized] = useState(false);
+  const [isHudMinimized, setIsHudMinimized] = useState(() => {
+    return typeof window !== "undefined" && window.innerWidth < 768;
+  });
+  const [showMobileBasemap, setShowMobileBasemap] = useState(false);
   const [targetLocation, setTargetLocation] = useState({
     name: "Guwahati, Assam (Active Disaster Zone)",
     coords: GUWAHATI_DISASTER_COORDS,
@@ -422,8 +425,63 @@ export default function CommandMap({
         </div>
       </div>
 
-      {/* Basemap Switcher Floating Widget (Top Right) */}
-      <div className="absolute top-28 right-3 z-[400] flex flex-col gap-1 bg-[#09152e]/95 backdrop-blur-md border border-cyan-500/40 p-2 rounded-xl shadow-2xl">
+      {/* Mobile Basemap Toggle Button (Phone Only) */}
+      <div className="md:hidden absolute top-20 right-2 z-[400] flex flex-col items-end">
+        <button
+          onClick={() => setShowMobileBasemap(!showMobileBasemap)}
+          className="w-8 h-8 rounded-xl bg-[#09152e]/95 backdrop-blur-md border border-cyan-500/40 shadow-xl flex items-center justify-center text-cyan-400 cursor-pointer"
+          title="Toggle Map Type"
+        >
+          <Layers className="w-4 h-4" />
+        </button>
+
+        {showMobileBasemap && (
+          <div className="mt-1.5 flex flex-col gap-1 bg-[#09152e]/95 backdrop-blur-md border border-cyan-500/40 p-1.5 rounded-xl shadow-2xl animate-in fade-in duration-150 text-[10px]">
+            <button
+              onClick={() => {
+                setActiveTile("google_streets");
+                setShowMobileBasemap(false);
+              }}
+              className={`px-2 py-1 font-medium rounded-lg text-left ${
+                activeTile === "google_streets"
+                  ? "bg-cyan-600 text-white font-bold"
+                  : "text-slate-300"
+              }`}
+            >
+              Roadmap
+            </button>
+            <button
+              onClick={() => {
+                setActiveTile("google_hybrid");
+                setShowMobileBasemap(false);
+              }}
+              className={`px-2 py-1 font-medium rounded-lg text-left ${
+                activeTile === "google_hybrid"
+                  ? "bg-cyan-600 text-white font-bold"
+                  : "text-slate-300"
+              }`}
+            >
+              Satellite
+            </button>
+            <button
+              onClick={() => {
+                setActiveTile("carto_dark");
+                setShowMobileBasemap(false);
+              }}
+              className={`px-2 py-1 font-medium rounded-lg text-left ${
+                activeTile === "carto_dark"
+                  ? "bg-cyan-600 text-white font-bold"
+                  : "text-slate-300"
+              }`}
+            >
+              Dark GIS
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Desktop Basemap Switcher Floating Widget (Top Right) */}
+      <div className="hidden md:flex absolute top-28 right-3 z-[400] flex-col gap-1 bg-[#09152e]/95 backdrop-blur-md border border-cyan-500/40 p-2 rounded-xl shadow-2xl">
         <span className="text-[9px] font-mono font-bold text-slate-400 uppercase px-1 pb-1 border-b border-slate-800 flex items-center justify-between">
           <span className="flex items-center gap-1">
             <Layers className="w-3 h-3 text-cyan-400" /> Map Type

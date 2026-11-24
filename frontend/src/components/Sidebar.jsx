@@ -14,7 +14,7 @@ const UNIT_ICON = { BOAT: Ship, DRONE: Cpu, AMBULANCE: Truck };
 export default function Sidebar({ layers, onToggleLayer, fleet = [], isDark }) {
   return (
     <aside
-      className={`w-64 border-r p-4 flex flex-col justify-between shrink-0 overflow-y-auto transition-colors ${
+      className={`w-full lg:w-64 border-r-0 lg:border-r p-4 flex flex-col justify-between shrink-0 overflow-y-auto transition-colors ${
         isDark
           ? "bg-[#0a1428] border-slate-800 text-slate-100"
           : "bg-white border-slate-200 text-slate-900"
