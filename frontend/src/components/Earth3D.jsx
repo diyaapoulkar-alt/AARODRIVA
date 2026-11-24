@@ -1,6 +1,79 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect } from "react";
 import * as THREE from "three";
-import { AlertTriangle, Radio, ShieldCheck, LifeBuoy } from "lucide-react";
+
+// Instant procedural canvas texture (0ms delay - eliminates initial white sphere)
+function createInstantEarthCanvas() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1024;
+  canvas.height = 512;
+  const ctx = canvas.getContext("2d");
+
+  // 1. Deep Oceanic Gradient
+  const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  grad.addColorStop(0, "#040e1d");
+  grad.addColorStop(0.2, "#092036");
+  grad.addColorStop(0.5, "#0d2b48");
+  grad.addColorStop(0.8, "#092036");
+  grad.addColorStop(1, "#040e1d");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // 2. Graticule Lat/Lon Wireframe Grid Lines
+  ctx.strokeStyle = "rgba(56, 189, 248, 0.09)";
+  ctx.lineWidth = 1;
+  for (let y = 0; y <= canvas.height; y += canvas.height / 12) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(canvas.width, y);
+    ctx.stroke();
+  }
+  for (let x = 0; x <= canvas.width; x += canvas.width / 24) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, canvas.height);
+    ctx.stroke();
+  }
+
+  // 3. Procedural Continent Landmasses in Tactical Deep Cyan/Navy
+  ctx.fillStyle = "rgba(22, 78, 118, 0.9)";
+  ctx.strokeStyle = "rgba(56, 189, 248, 0.45)";
+  ctx.lineWidth = 1.2;
+
+  const w = canvas.width;
+  const h = canvas.height;
+  const toX = (lon) => ((lon + 180) / 360) * w;
+  const toY = (lat) => ((90 - lat) / 180) * h;
+
+  const continents = [
+    // Eurasia & South Asia
+    [[35, -10], [60, -10], [70, 30], [70, 170], [50, 140], [25, 120], [10, 105], [20, 85], [30, 60], [30, 35], [45, 25], [35, -10]],
+    // Africa
+    [[35, -10], [35, 30], [12, 50], [-35, 20], [-35, 15], [5, 10], [15, -15], [35, -10]],
+    // North America
+    [[15, -100], [30, -80], [45, -60], [70, -60], [70, -165], [55, -165], [30, -120], [15, -100]],
+    // South America
+    [[12, -75], [5, -50], [-10, -35], [-50, -70], [-20, -70], [12, -75]],
+    // Australia
+    [[-15, 125], [-15, 150], [-38, 150], [-35, 115], [-15, 125]],
+    // India & Bay of Bengal
+    [[35, 72], [28, 90], [22, 90], [10, 80], [8, 77], [20, 70], [35, 72]],
+  ];
+
+  continents.forEach((pts) => {
+    ctx.beginPath();
+    pts.forEach(([lat, lon], idx) => {
+      const px = toX(lon);
+      const py = toY(lat);
+      if (idx === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    });
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  });
+
+  return canvas;
+}
 
 export default function Earth3D() {
   const containerRef = useRef(null);
@@ -30,29 +103,36 @@ export default function Earth3D() {
 
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
-      camera.position.set(0, 0, 8.8);
+      camera.position.set(0.2, 0, 8.6);
 
       const globe = new THREE.Group();
       scene.add(globe);
 
-      // Textures & Earth Mesh
-      const textureLoader = new THREE.TextureLoader();
+      // 1. INSTANT BASE TEXTURE (Eliminates the initial white sphere completely)
+      const instantCanvas = createInstantEarthCanvas();
+      const instantTexture = new THREE.CanvasTexture(instantCanvas);
+      instantTexture.colorSpace = THREE.SRGBColorSpace;
+
       const earthMat = new THREE.MeshPhongMaterial({
-        color: 0xffffff,
-        shininess: 14,
+        map: instantTexture,
+        color: 0x1d4d75, // Rich oceanic blue base
+        shininess: 16,
         specular: 0x245073,
       });
 
-      // Load official high-res Earth texture with fallback color
+      // 2. High-res NASA satellite texture asynchronously replaces base when ready
+      const textureLoader = new THREE.TextureLoader();
       textureLoader.load(
         "https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg",
         (t) => {
           t.colorSpace = THREE.SRGBColorSpace;
           earthMat.map = t;
+          earthMat.color.set(0xffffff); // Full brightness once texture lands
           earthMat.needsUpdate = true;
         },
         undefined,
         () => {
+          // If network fails, keep rich instant texture
           earthMat.color.set(0x184872);
         }
       );
@@ -327,19 +407,19 @@ export default function Earth3D() {
       onTouchStart={handlePointerDown}
       onTouchMove={handlePointerMove}
       onTouchEnd={handlePointerUp}
-      className="relative w-full h-full min-h-[480px] lg:min-h-[640px] select-none cursor-grab active:cursor-grabbing flex items-center justify-end overflow-visible"
+      className="relative w-full h-full min-h-[420px] lg:min-h-[580px] select-none cursor-grab active:cursor-grabbing flex items-center justify-end overflow-visible"
     >
       {/* Three.js Canvas */}
       <canvas ref={canvasRef} className="w-full h-full block" />
 
       {/* Floating Tactical HUD Card 1: FLOOD RISK (Top Right) */}
-      <div className="absolute top-[16%] right-[8%] z-10 p-3 sm:p-3.5 rounded-xl bg-[#09172bc0] border border-rose-500/40 backdrop-blur-md shadow-2xl animate-float-3d pointer-events-none">
-        <small className="block text-[9px] font-mono tracking-widest text-slate-400 font-bold">
+      <div className="absolute top-[12%] right-[6%] z-10 p-2.5 sm:p-3 rounded-xl bg-[#09172bc0] border border-rose-500/40 backdrop-blur-md shadow-2xl animate-float-3d pointer-events-none">
+        <small className="block text-[8.5px] font-mono tracking-widest text-slate-400 font-bold uppercase">
           FLOOD RISK
         </small>
-        <div className="flex items-center gap-2 mt-1">
+        <div className="flex items-center gap-1.5 mt-0.5">
           <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
-          <strong className="text-base sm:text-lg font-black text-rose-400 tracking-wider">
+          <strong className="text-sm sm:text-base font-black text-rose-400 tracking-wider">
             HIGH
           </strong>
         </div>
@@ -347,46 +427,33 @@ export default function Earth3D() {
 
       {/* Floating Tactical HUD Card 2: AFFECTED SETTLEMENTS (Right Middle) */}
       <div
-        className="absolute top-[44%] right-[2%] z-10 p-3 sm:p-3.5 rounded-xl bg-[#09172bc0] border border-cyan-500/40 backdrop-blur-md shadow-2xl animate-float-3d pointer-events-none"
+        className="absolute top-[42%] right-[2%] z-10 p-2.5 sm:p-3 rounded-xl bg-[#09172bc0] border border-cyan-500/40 backdrop-blur-md shadow-2xl animate-float-3d pointer-events-none"
         style={{ animationDelay: "-2s" }}
       >
-        <small className="block text-[9px] font-mono tracking-widest text-slate-400 font-bold">
-          AFFECTED SETTLEMENTS
+        <small className="block text-[8.5px] font-mono tracking-widest text-slate-400 font-bold uppercase">
+          MAROONED VILLAGES
         </small>
-        <strong className="text-xl sm:text-2xl font-black text-cyan-400 tracking-tight mt-1 block">
+        <strong className="text-lg sm:text-xl font-black text-cyan-400 tracking-tight mt-0.5 block">
           24
         </strong>
       </div>
 
-      {/* Floating Tactical HUD Card 3: ACTIVE SOS (Bottom Center-Right) */}
+      {/* Floating Tactical HUD Card 3: RESCUE OPERATIONS (Bottom Right) */}
       <div
-        className="absolute bottom-[20%] right-[32%] z-10 p-3 sm:p-3.5 rounded-xl bg-[#09172bc0] border border-amber-500/40 backdrop-blur-md shadow-2xl animate-float-3d pointer-events-none hidden sm:block"
-        style={{ animationDelay: "-3s" }}
-      >
-        <small className="block text-[9px] font-mono tracking-widest text-slate-400 font-bold">
-          ACTIVE SOS
-        </small>
-        <strong className="text-xl sm:text-2xl font-black text-amber-400 tracking-tight mt-1 block">
-          18
-        </strong>
-      </div>
-
-      {/* Floating Tactical HUD Card 4: RESCUE OPERATIONS (Bottom Right) */}
-      <div
-        className="absolute bottom-[16%] right-[6%] z-10 p-3 sm:p-3.5 rounded-xl bg-[#09172bc0] border border-emerald-500/40 backdrop-blur-md shadow-2xl animate-float-3d pointer-events-none"
+        className="absolute bottom-[14%] right-[6%] z-10 p-2.5 sm:p-3 rounded-xl bg-[#09172bc0] border border-emerald-500/40 backdrop-blur-md shadow-2xl animate-float-3d pointer-events-none"
         style={{ animationDelay: "-1s" }}
       >
-        <small className="block text-[9px] font-mono tracking-widest text-slate-400 font-bold">
-          RESCUE OPERATIONS
+        <small className="block text-[8.5px] font-mono tracking-widest text-slate-400 font-bold uppercase">
+          ACTIVE SAR CORRIDORS
         </small>
-        <strong className="text-xl sm:text-2xl font-black text-emerald-400 tracking-tight mt-1 block">
+        <strong className="text-lg sm:text-xl font-black text-emerald-400 tracking-tight mt-0.5 block">
           07
         </strong>
       </div>
 
       {/* Bottom Subtitle Caption */}
-      <div className="absolute bottom-4 right-10 text-[10px] font-mono text-cyan-400/80 tracking-widest uppercase pointer-events-none">
-        360° Real-Time Orbit · Drag to Inspect
+      <div className="absolute bottom-2 right-8 text-[9.5px] font-mono text-cyan-400/80 tracking-widest uppercase pointer-events-none">
+        360° Real-Time Orbit · Drag to Rotate
       </div>
     </div>
   );
