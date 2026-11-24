@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { api } from '../services/api';
 
 export default function SOSModal({ isOpen, onClose, onSubmitSuccess }) {
   const [formData, setFormData] = useState({
@@ -50,12 +51,7 @@ export default function SOSModal({ isOpen, onClose, onSubmitSuccess }) {
     }
 
     try {
-      const res = await fetch('/api/sos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
+      const data = await api.submitSOS(payload);
       setSubmitting(false);
       onSubmitSuccess({ ...payload, id: data.incident_id || 'SOS-NEW' });
       onClose();

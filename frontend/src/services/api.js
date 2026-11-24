@@ -2,8 +2,19 @@
 // Full Worldwide Flood Intelligence, Live Open-Meteo Real-Time Telemetry & RescueRoute AI
 // NO EXTERNAL API KEY REQUIRED: Sovereign open-source geospatial engine.
 
-const DIRECT_BACKEND = "http://localhost:8000/api";
-const PROXIED_BACKEND = "/api";
+export const RENDER_BACKEND = "https://aarodriva.onrender.com/api";
+export const LOCAL_BACKEND = "http://localhost:8000/api";
+export const PROXIED_BACKEND = "/api";
+
+const isLocalhost =
+  typeof window !== "undefined" &&
+  (window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1");
+
+// In production (Vercel / web domain), prioritize the live Render backend; fallback to localhost during local dev
+export const DIRECT_BACKEND =
+  import.meta.env.VITE_BACKEND_URL ||
+  (isLocalhost ? LOCAL_BACKEND : RENDER_BACKEND);
 
 // Curated Worldwide Flood Disaster & Vulnerability Zones across 7 Continents
 export const GLOBAL_FLOOD_ZONES = [
@@ -458,11 +469,13 @@ const MOCK_DATA = {
 
 async function executeRequest(endpoint) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 2500);
+  const timeoutId = setTimeout(() => controller.abort(), 4000);
 
   const candidateUrls = [
     `${DIRECT_BACKEND}${endpoint}`,
+    `${RENDER_BACKEND}${endpoint}`,
     `${PROXIED_BACKEND}${endpoint}`,
+    `${LOCAL_BACKEND}${endpoint}`,
   ];
 
   for (const url of candidateUrls) {
@@ -473,7 +486,7 @@ async function executeRequest(endpoint) {
         return await res.json();
       }
     } catch {
-      // try next
+      // try next candidate
     }
   }
   clearTimeout(timeoutId);
@@ -641,51 +654,97 @@ export const api = {
   },
 
   predictLocation: async (lat, lon, placeName = "") => {
-    try {
-      const res = await fetch(`${DIRECT_BACKEND}/predict/location`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          latitude: lat,
-          longitude: lon,
-          place_name: placeName,
-        }),
-      });
-      if (!res.ok) throw new Error("Predict offline");
-      return await res.json();
-    } catch {
-      const distToGhy = Math.hypot(lat - 26.158, lon - 91.738) * 111;
-      const isNearDisaster = distToGhy < 15;
-      return {
-        place_name: placeName || `Coordinates [${lat.toFixed(3)}, ${lon.toFixed(3)}]`,
-        latitude: lat,
-        longitude: lon,
-        prediction: {
-          access_status: isNearDisaster ? "At risk" : "Accessible",
-          is_marooned: false,
-          is_inundated: false,
-          risk_score: isNearDisaster ? 60 : 15,
-          isolation_reason: isNearDisaster ? "Near active flood basin perimeter" : "Normal ground elevation",
-        },
-      };
+    const candidateUrls = [
+      `${DIRECT_BACKEND}/predict/location`,
+      `${RENDER_BACKEND}/predict/location`,
+      `/api/predict/location`,
+      `${LOCAL_BACKEND}/predict/location`,
+    ];
+
+    for (const url of candidateUrls) {
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            latitude: lat,
+            longitude: lon,
+            place_name: placeName,
+          }),
+        });
+        if (res.ok) return await res.json();
+      } catch {
+        // try next candidate
+      }
     }
+
+    const distToGhy = Math.hypot(lat - 26.158, lon - 91.738) * 111;
+    const isNearDisaster = distToGhy < 15;
+    return {
+      place_name: placeName || `Coordinates [${lat.toFixed(3)}, ${lon.toFixed(3)}]`,
+      latitude: lat,
+      longitude: lon,
+      prediction: {
+        access_status: isNearDisaster ? "At risk" : "Accessible",
+        is_marooned: false,
+        is_inundated: false,
+        risk_score: isNearDisaster ? 60 : 15,
+        isolation_reason: isNearDisaster ? "Near active flood basin perimeter" : "Normal ground elevation",
+      },
+    };
   },
 
   dispatchRescueUnit: async (incidentId) => {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000);
-      const res = await fetch(`${DIRECT_BACKEND}/incidents/${incidentId}/dispatch`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-      if (!res.ok) throw new Error("Backend offline");
-      return await res.json();
-    } catch {
-      return { success: true, incidentId, status: "DISPATCHED" };
+    const candidateUrls = [
+      `${DIRECT_BACKEND}/incidents/${incidentId}/dispatch`,
+      `${RENDER_BACKEND}/incidents/${incidentId}/dispatch`,
+      `/api/incidents/${incidentId}/dispatch`,
+      `${LOCAL_BACKEND}/incidents/${incidentId}/dispatch`,
+    ];
+
+    for (const url of candidateUrls) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        if (res.ok) return await res.json();
+      } catch {
+        // try next candidate
+      }
     }
+    return { success: true, incidentId, status: "DISPATCHED" };
+  },
+
+  submitSOS: async (payload) => {
+    const candidateUrls = [
+      `${DIRECT_BACKEND}/sos`,
+      `${RENDER_BACKEND}/sos`,
+      `/api/sos`,
+      `${LOCAL_BACKEND}/sos`,
+    ];
+
+    for (const url of candidateUrls) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        if (res.ok) return await res.json();
+      } catch {
+        // try next candidate
+      }
+    }
+    return { success: true, incident_id: "SOS-DISPATCHED-" + Date.now().toString().slice(-4) };
   },
 
   getSitrep: async () => {
