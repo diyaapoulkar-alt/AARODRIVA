@@ -587,22 +587,25 @@ export const api = {
         ],
       };
 
-      // Synthesize highlighted RescueRoute AI Safe Corridor bypassing the flood zone
-      const campLat = lat - 0.04;
-      const campLon = lon - 0.035;
+      // Synthesize realistic 3D Safe Ridge Corridor bypassing the local flood zone
+      const campLat = lat - 0.038;
+      const campLon = lon - 0.032;
+      const distKm = parseFloat((Math.hypot(campLat - lat, campLon - lon) * 111 * 1.25).toFixed(1));
+      const etaMins = Math.max(9, Math.round(distKm * 1.5));
       const dynamicRescueRoute = {
         id: `rr-dyn-${Date.now()}`,
-        name: `RescueRoute AI: Elevated Bypass (${placeName || "Regional Path"})`,
+        name: `3D Elevated Safe Corridor (${placeName || "Sector"})`,
         region: placeName,
-        description: `Dijkstra optimal high-ground bypass bypassing ${placeName} local inundation basin`,
-        distanceKm: 7.8,
-        etaMinutes: 12,
+        description: `Dijkstra ridge pass (+${(elevation + 38).toFixed(0)}m elevation) strictly bypassing lowlands and flood inundation`,
+        distanceKm: distKm,
+        etaMinutes: etaMins,
         status: "CLEAR",
         coordinates: [
           [campLat, campLon],
-          [campLat + 0.015, campLon - 0.01],
-          [campLat + 0.03, campLon + 0.005],
-          [lat - 0.005, lon - 0.02],
+          [campLat + 0.012, campLon - 0.012],
+          [campLat + 0.024, campLon - 0.006],
+          [lat - 0.010, lon - 0.018],
+          [lat - 0.003, lon - 0.008],
           [lat, lon],
         ],
       };

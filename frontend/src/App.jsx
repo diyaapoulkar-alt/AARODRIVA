@@ -63,6 +63,7 @@ export default function App() {
   const [sitrepData, setSitrepData] = useState(null);
   const [isAuthoritiesOpen, setIsAuthoritiesOpen] = useState(false);
   const [isSOSOpen, setIsSOSOpen] = useState(false);
+  const [activeMapLocation, setActiveMapLocation] = useState(null);
 
   const loadData = useCallback(async () => {
     setIsRefreshing(true);
@@ -312,6 +313,7 @@ export default function App() {
                 layers={layers}
                 selectedIncident={selectedIncident}
                 isDark={isDark}
+                onLocationChange={setActiveMapLocation}
               />
 
               {/* Flood Forecast Time Slider Overlay */}
@@ -371,6 +373,7 @@ export default function App() {
         isOpen={isAuthoritiesOpen}
         onClose={() => setIsAuthoritiesOpen(false)}
         activeIncidents={data.incidents}
+        activeLocation={activeMapLocation}
       />
 
       {/* Citizen NavIC Distress SOS Modal */}

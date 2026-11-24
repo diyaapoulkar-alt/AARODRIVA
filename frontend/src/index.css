@@ -154,3 +154,38 @@
 .animate-wave-ping {
   animation: wavePing 2.5s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
+
+/* 3D Elevated RescueRoute Conduit Animations */
+@keyframes rescueRoutePulse3D {
+  0% {
+    stroke-dashoffset: 48;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.rescue-route-pulse-3d {
+  animation: rescueRoutePulse3D 1.3s linear infinite !important;
+  stroke-linecap: round !important;
+}
+
+@keyframes hazardRoutePulse3D {
+  0% {
+    stroke-dashoffset: 32;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.hazard-pulse-3d {
+  animation: hazardRoutePulse3D 1.8s linear infinite !important;
+  stroke-linecap: round !important;
+}
+
+/* 3D Isometric Drop Shadow on SVG Paths */
+.isometric-drop-shadow {
+  filter: drop-shadow(4px 8px 12px rgba(0, 0, 0, 0.75));
+}
+

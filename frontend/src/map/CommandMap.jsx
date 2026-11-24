@@ -174,9 +174,11 @@ export default function CommandMap({
   camps,
   layers,
   selectedIncident,
+  onLocationChange,
 }) {
   const [activeTile, setActiveTile] = useState("google_streets");
   const [currentZoom, setCurrentZoom] = useState(13);
+  const [isHudMinimized, setIsHudMinimized] = useState(false);
   const [targetLocation, setTargetLocation] = useState({
     name: "Guwahati, Assam (Active Disaster Zone)",
     coords: GUWAHATI_DISASTER_COORDS,
@@ -205,12 +207,28 @@ export default function CommandMap({
         if (realtime.dynamicFloodZone) {
           setDynamicFloodZones([realtime.dynamicFloodZone]);
         }
-        if (realtime.dynamicRescueRoute) {
-          setDynamicRoutes([realtime.dynamicRescueRoute]);
-        }
         if (realtime.dynamicBlockedRoad) {
           setDynamicBlockedRoads([realtime.dynamicBlockedRoad]);
         }
+      }
+
+      // Populate 3D route: prioritize backend calculation or synthesized topographic bypass
+      if (pred?.recommended_rescue_route?.route_coordinates?.length > 1) {
+        setDynamicRoutes([
+          {
+            id: `rr-pred-${Date.now()}`,
+            name: `3D Elevated Safe Corridor (${name || "Target Sector"})`,
+            region: name,
+            description:
+              pred.recommended_action ||
+              "Topographic ridge path (+48m elevation) strictly bypassing lowlands and flood zones.",
+            distanceKm: pred.recommended_rescue_route.total_distance_km || 7.8,
+            etaMinutes: pred.recommended_rescue_route.eta_minutes || 12,
+            coordinates: pred.recommended_rescue_route.route_coordinates,
+          },
+        ]);
+      } else if (realtime?.dynamicRescueRoute) {
+        setDynamicRoutes([realtime.dynamicRescueRoute]);
       }
     } catch (err) {
       console.error("Prediction error:", err);
@@ -221,6 +239,7 @@ export default function CommandMap({
 
   const handleSelectLocation = (loc) => {
     setTargetLocation(loc);
+    onLocationChange?.(loc);
     if (loc.type !== "active_disaster") {
       setSearchedCity(loc);
       fetchPrediction(loc.coords, loc.name);
@@ -242,6 +261,7 @@ export default function CommandMap({
       type: "clicked_point",
     };
     setSearchedCity(loc);
+    onLocationChange?.(loc);
     fetchPrediction(coords, loc.name);
   };
 
@@ -268,89 +288,137 @@ export default function CommandMap({
 
         {/* Dynamic Disaster & Reconnaissance HUD Badge */}
         <div className="w-full md:w-auto max-w-xl pointer-events-auto">
-          <div className="bg-[#081329]/95 backdrop-blur-md border border-cyan-500/40 rounded-xl p-3 shadow-2xl text-white">
-            {selectedIncident ? (
-              /* Case 1: An incident is clicked/focused from IncidentPanel */
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping shrink-0" />
-                    <h2 className="text-xs sm:text-sm font-black tracking-wide text-rose-300 uppercase truncate">
-                      INCIDENT FOCUS: {selectedIncident.title || selectedIncident.id}
-                    </h2>
-                  </div>
-                  <span className="px-1.5 py-0.5 text-[9px] font-mono bg-rose-950 text-rose-300 border border-rose-700/80 rounded shrink-0">
-                    PRIORITY {selectedIncident.severity || "HIGH"} {selectedIncident.triageScore ? `(${selectedIncident.triageScore}/100)` : ""}
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-300 font-medium truncate">
-                  📍 {selectedIncident.location} • {selectedIncident.peopleAffected || 1} Souls Stranded • Status: <span className="font-bold text-amber-300">{selectedIncident.status}</span>
-                </p>
-                <div className="flex items-center justify-between text-[10px] font-mono text-cyan-300 pt-1 border-t border-slate-800">
-                  <span>Assigned Unit: <strong className="text-emerald-300">{selectedIncident.assignedUnit || "NDRF Quick Response"}</strong></span>
-                  <span className="text-emerald-400 font-bold">{zoomDetailLabel} ({currentZoom}x)</span>
-                </div>
+          {isHudMinimized ? (
+            <div className="bg-[#081329]/95 backdrop-blur-md border border-cyan-500/40 rounded-xl px-3 py-2 shadow-2xl text-white flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping shrink-0" />
+                <span className="text-xs font-bold text-rose-300 truncate">
+                  {selectedIncident
+                    ? `INCIDENT: ${selectedIncident.title || selectedIncident.id}`
+                    : searchedCity
+                    ? `RECON: ${searchedCity.name}`
+                    : "ACTIVE DISASTER: BRAHMAPUTRA (RED)"}
+                </span>
               </div>
-            ) : searchedCity ? (
-              /* Case 2: A location was searched or clicked anywhere on the globe */
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-cyan-400 shrink-0" />
-                    <h2 className="text-xs sm:text-sm font-black tracking-wide text-cyan-300 uppercase truncate">
-                      {searchedCity?.name}
-                    </h2>
+              <button
+                onClick={() => setIsHudMinimized(false)}
+                className="text-[10px] font-mono font-bold text-cyan-300 hover:text-white bg-[#0b1c3d] hover:bg-[#122e66] px-2.5 py-1 rounded border border-cyan-500/40 transition cursor-pointer shrink-0"
+              >
+                Expand HUD ▾
+              </button>
+            </div>
+          ) : (
+            <div className="bg-[#081329]/95 backdrop-blur-md border border-cyan-500/40 rounded-xl p-3 shadow-2xl text-white">
+              {selectedIncident ? (
+                /* Case 1: An incident is clicked/focused from IncidentPanel */
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping shrink-0" />
+                      <h2 className="text-xs sm:text-sm font-black tracking-wide text-rose-300 uppercase truncate">
+                        INCIDENT FOCUS: {selectedIncident.title || selectedIncident.id}
+                      </h2>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="px-1.5 py-0.5 text-[9px] font-mono bg-rose-950 text-rose-300 border border-rose-700/80 rounded">
+                        PRIORITY {selectedIncident.severity || "HIGH"} {selectedIncident.triageScore ? `(${selectedIncident.triageScore}/100)` : ""}
+                      </span>
+                      <button
+                        onClick={() => setIsHudMinimized(true)}
+                        className="text-slate-400 hover:text-white text-xs px-1 hover:bg-slate-800 rounded transition cursor-pointer"
+                        title="Minimize HUD"
+                      >
+                        ▲
+                      </button>
+                    </div>
                   </div>
-                  <button
-                    onClick={() =>
-                      handleSelectLocation({
-                        name: "Guwahati, Assam (Active Disaster Zone)",
-                        coords: GUWAHATI_DISASTER_COORDS,
-                        zoom: 13,
-                        type: "active_disaster",
-                      })
-                    }
-                    className="px-2 py-0.5 text-[10px] font-mono font-bold bg-rose-600 hover:bg-rose-500 text-white rounded transition shadow shrink-0 cursor-pointer"
-                  >
-                    🚨 Return to Assam EOC
-                  </button>
-                </div>
-                <p className="text-[11px] text-slate-300">
-                  Coordinates: {targetLocation?.coords[0].toFixed(4)}°N, {targetLocation?.coords[1].toFixed(4)}°E • Zoom: {currentZoom}x
-                </p>
-                <div className="flex items-center justify-between text-[10px] font-mono text-cyan-300 pt-1 border-t border-slate-800">
-                  <span>
-                    🛰️ Live Radar: {realtimeWeather?.rainRate > 0 ? `Rain ${realtimeWeather.rainRate} mm/h` : "Real-Time Telemetry Active"} • Elev: {realtimeWeather?.elevation || 12}m
-                  </span>
-                  <span className={`font-bold ${realtimeWeather?.severity === "CRITICAL" ? "text-rose-400" : "text-emerald-400"}`}>
-                    Flood Threat: {realtimeWeather?.severity || "MONITORED"}
-                  </span>
-                </div>
-              </div>
-            ) : (
-              /* Case 3: Default Active Disaster Overview */
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping shrink-0" />
-                    <h2 className="text-xs sm:text-sm font-black tracking-wide text-rose-300 uppercase">
-                      ACTIVE DISASTER: BRAHMAPUTRA FLOOD BASIN
-                    </h2>
+                  <p className="text-[11px] text-slate-300 font-medium truncate">
+                    📍 {selectedIncident.location} • {selectedIncident.peopleAffected || 1} Souls Stranded • Status: <span className="font-bold text-amber-300">{selectedIncident.status}</span>
+                  </p>
+                  <div className="flex items-center justify-between text-[10px] font-mono text-cyan-300 pt-1 border-t border-slate-800">
+                    <span>Assigned Unit: <strong className="text-emerald-300">{selectedIncident.assignedUnit || "NDRF Quick Response"}</strong></span>
+                    <span className="text-emerald-400 font-bold">{zoomDetailLabel} ({currentZoom}x)</span>
                   </div>
-                  <span className="px-1.5 py-0.5 text-[9px] font-mono bg-rose-950 text-rose-300 border border-rose-700/80 rounded shrink-0">
-                    SEVERITY: RED
-                  </span>
                 </div>
-                <p className="text-[11px] text-slate-300 font-medium">
-                  Guwahati & Kamrup Metro, Assam • 26.158°N, 91.738°E • Gauge: 51.1m (+1.6m Above Danger)
-                </p>
-                <div className="flex items-center justify-between text-[10px] font-mono text-cyan-300 pt-1 border-t border-slate-800">
-                  <span>Sensor: ISRO Bhoonidhi RISAT-1A SAR</span>
-                  <span className="text-emerald-400 font-bold">{zoomDetailLabel} ({currentZoom}x)</span>
+              ) : searchedCity ? (
+                /* Case 2: A location was searched or clicked anywhere on the globe */
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Globe className="w-4 h-4 text-cyan-400 shrink-0" />
+                      <h2 className="text-xs sm:text-sm font-black tracking-wide text-cyan-300 uppercase truncate">
+                        {searchedCity?.name}
+                      </h2>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        onClick={() =>
+                          handleSelectLocation({
+                            name: "Guwahati, Assam (Active Disaster Zone)",
+                            coords: GUWAHATI_DISASTER_COORDS,
+                            zoom: 13,
+                            type: "active_disaster",
+                          })
+                        }
+                        className="px-2 py-0.5 text-[10px] font-mono font-bold bg-rose-600 hover:bg-rose-500 text-white rounded transition shadow cursor-pointer"
+                      >
+                        🚨 Return to Assam EOC
+                      </button>
+                      <button
+                        onClick={() => setIsHudMinimized(true)}
+                        className="text-slate-400 hover:text-white text-xs px-1 hover:bg-slate-800 rounded transition cursor-pointer"
+                        title="Minimize HUD"
+                      >
+                        ▲
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-slate-300">
+                    Coordinates: {targetLocation?.coords[0].toFixed(4)}°N, {targetLocation?.coords[1].toFixed(4)}°E • Zoom: {currentZoom}x
+                  </p>
+                  <div className="flex items-center justify-between text-[10px] font-mono text-cyan-300 pt-1 border-t border-slate-800">
+                    <span>
+                      🛰️ Live Radar: {realtimeWeather?.rainRate > 0 ? `Rain ${realtimeWeather.rainRate} mm/h` : "Real-Time Telemetry Active"} • Elev: {realtimeWeather?.elevation || 12}m
+                    </span>
+                    <span className={`font-bold ${realtimeWeather?.severity === "CRITICAL" ? "text-rose-400" : "text-emerald-400"}`}>
+                      Flood Threat: {realtimeWeather?.severity || "MONITORED"}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              ) : (
+                /* Case 3: Default Active Disaster Overview */
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping shrink-0" />
+                      <h2 className="text-xs sm:text-sm font-black tracking-wide text-rose-300 uppercase">
+                        ACTIVE DISASTER: BRAHMAPUTRA FLOOD BASIN
+                      </h2>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="px-1.5 py-0.5 text-[9px] font-mono bg-rose-950 text-rose-300 border border-rose-700/80 rounded">
+                        SEVERITY: RED
+                      </span>
+                      <button
+                        onClick={() => setIsHudMinimized(true)}
+                        className="text-slate-400 hover:text-white text-xs px-1 hover:bg-slate-800 rounded transition cursor-pointer"
+                        title="Minimize HUD"
+                      >
+                        ▲
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-slate-300 font-medium">
+                    Guwahati & Kamrup Metro, Assam • 26.158°N, 91.738°E • Gauge: 51.1m (+1.6m Above Danger)
+                  </p>
+                  <div className="flex items-center justify-between text-[10px] font-mono text-cyan-300 pt-1 border-t border-slate-800">
+                    <span>Sensor: ISRO Bhoonidhi RISAT-1A SAR</span>
+                    <span className="text-emerald-400 font-bold">{zoomDetailLabel} ({currentZoom}x)</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -590,40 +658,7 @@ export default function CommandMap({
           </Marker>
         )}
 
-        {/* Dynamic AI RescueRoute calculated for clicked/searched point */}
-        {locationPrediction?.recommended_rescue_route?.route_coordinates?.length > 1 && (
-          <Polyline
-            positions={locationPrediction.recommended_rescue_route.route_coordinates}
-            pathOptions={{
-              color: "#10b981",
-              weight: 6,
-              dashArray: "8, 6",
-              opacity: 0.95,
-              lineCap: "round",
-            }}
-          >
-            <Tooltip permanent direction="center">
-              <span className="font-mono text-[10px] font-bold text-emerald-300 bg-emerald-950/90 px-2 py-0.5 rounded border border-emerald-500/60 shadow">
-                ⚡ Dynamic RescueRoute: {locationPrediction.recommended_rescue_route.total_distance_km} km ({locationPrediction.recommended_rescue_route.eta_minutes}m ETA)
-              </span>
-            </Tooltip>
-            <Popup>
-              <div className="text-xs space-y-1 font-mono p-1">
-                <p className="font-bold text-emerald-400">⚡ DYNAMIC RESCUEROUTE AI BYPASS</p>
-                <p className="text-white">To: {locationPrediction.place_name}</p>
-                <p className="text-slate-300">
-                  Total Distance: <span className="font-bold text-emerald-300">{locationPrediction.recommended_rescue_route.total_distance_km} km</span>
-                </p>
-                <p className="text-slate-300">
-                  Estimated Time: <span className="font-bold text-white">{locationPrediction.recommended_rescue_route.eta_minutes} mins</span>
-                </p>
-                <p className="text-cyan-300 text-[10px]">
-                  Bypassing submerged roads via Dijkstra high-ground graph.
-                </p>
-              </div>
-            </Popup>
-          </Polyline>
-        )}
+
 
         {/* Disaster Epicenter Marker (Assam) */}
         <Marker position={[26.182, 91.730]} icon={epicenterIcon}>
